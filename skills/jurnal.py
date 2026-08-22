@@ -8,7 +8,7 @@ Kayıt anında kurallar denetlenir ve ihlal **kaydedilir, engellenmez**
 (Bölüm 5). Venüs hatırlatır, sonra çekilir — karar kullanıcınındır.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 
 from core.registry import Risk, Perm, skill, satir, bilgi, uyari, vurgu
 from core import jurnal as depo
@@ -141,4 +141,82 @@ async def _kayit(arg):
     if ekstra:
         out.append(bilgi(""))
         out += [satir(f"{a:<10}: {d}") for a, d in ekstra.items()]
+    return out
+
+
+@skill("istatistik", "jurnal özeti", Risk.YESIL, izinler=(Perm.OKUMA,),
+       kullanim="istatistik", takma_adlar=("ist",))
+async def _istatistik(arg):
+    kayitlar = depo.hepsi()
+    if not kayitlar:
+        return [bilgi("jurnal boş — istatistik için önce kayıt gerek.")]
+
+    kapali = [k for k in kayitlar
+              if isinstance(k.get("sonuc_r"), (int, float))]
+    acik = len(kayitlar) - len(kapali)
+
+    out = [vurgu(f"{len(kayitlar)} kayıt" + (f" · {acik} açık" if acik else ""))]
+    if not kapali:
+        out.append(bilgi("sonuçlanmış kayıt yok — R istatistiği çıkarılamaz."))
+        return out
+
+    rler = [float(k["sonuc_r"]) for k in kapali]
+    kazanan = [r for r in rler if r > 0]
+    out += [
+        satir(f"  toplam       {sum(rler):+.2f}R"),
+        satir(f"  ortalama     {sum(rler) / len(rler):+.2f}R"),
+        satir(f"  win rate     %{100 * len(kazanan) / len(kapali):.0f}  "
+              f"({len(kazanan)}/{len(kapali)})"),
+        satir(f"  en iyi       {max(rler):+.2f}R"),
+        satir(f"  en kötü      {min(rler):+.2f}R"),
+    ]
+
+    dagilim: dict[str, list[float]] = {}
+    for k in kapali:
+        dagilim.setdefault((k.get("setup") or "—").strip(), []).append(float(k["sonuc_r"]))
+    if dagilim:
+        out.append(bilgi(""))
+        out.append(bilgi("setup dağılımı:"))
+        for setup, rs in sorted(dagilim.items(), key=lambda x: -sum(x[1])):
+            out.append(satir(f"  {setup[:28]:<28} {len(rs):>3} işlem  "
+                             f"ort {sum(rs) / len(rs):+.2f}R  top {sum(rs):+.2f}R"))
+
+    ihlal_sayisi = sum(len(k.get("ihlaller") or []) for k in kayitlar)
+    if ihlal_sayisi:
+        out.append(bilgi(""))
+        out.append(satir(f"  {ihlal_sayisi} kural ihlali kayıtlı — ayrıntı: ihlaller"))
+
+    # Az örnekle çıkarılan oran gürültüdür; Venüs emin olmadığını söyler.
+    if len(kapali) < 20:
+        out.append(bilgi(""))
+        out.append(bilgi(f"{len(kapali)} işlem az — bu oranlar henüz bir şey anlatmıyor."))
+    return out
+
+
+@skill("eksik", "sonuçlanmamış ve boş kayıtlar", Risk.YESIL, izinler=(Perm.OKUMA,),
+       kullanim="eksik")
+async def _eksik(arg):
+    kayitlar = depo.hepsi()
+    if not kayitlar:
+        return [bilgi("jurnal boş.")]
+
+    zorunlu = kural_motoru.yukle().deger("trading.zorunlu_alanlar", ())
+    acik = [k for k in kayitlar if not isinstance(k.get("sonuc_r"), (int, float))]
+    bosluklu = [(k, [a for a in zorunlu if not str(k.get(a) or "").strip()])
+                for k in kayitlar]
+    bosluklu = [(k, eksikler) for k, eksikler in bosluklu if eksikler]
+
+    if not acik and not bosluklu:
+        bugun = len(depo.gun(date.today(), kayitlar))
+        return [bilgi("eksik kayıt yok." + (f" bugün {bugun} işlem." if bugun else ""))]
+
+    out = []
+    if acik:
+        out.append(uyari(f"{len(acik)} kayıt sonuçlanmamış:"))
+        out += [satir(f"  {k.get('id', '????')}  {_baslik(k)}") for k in acik[-10:]]
+        out.append(bilgi(""))
+    if bosluklu:
+        out.append(uyari(f"{len(bosluklu)} kayıtta zorunlu alan boş:"))
+        out += [satir(f"  {k.get('id', '????')}  {k.get('sembol', '?')}  → {', '.join(e)}")
+                for k, e in bosluklu[-10:]]
     return out

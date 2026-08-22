@@ -19,8 +19,8 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 - [x] `skills/jurnal.py` — kayıt ekleme, zorunlu alan kontrolü
 - [x] Jurnal listeleme ve tek kayıt görüntüleme
 - [x] Kayıt anında kural denetimi
-- [ ] `jurnal istatistik` — R ortalaması, win rate, setup dağılımı
-- [ ] Eksik jurnal hatırlatması
+- [x] `istatistik` — R ortalaması, win rate, setup dağılımı
+- [x] Eksik jurnal hatırlatması
 
 ## Faz 3 — niyet çözücü
 

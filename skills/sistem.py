@@ -15,7 +15,7 @@ async def _yardim(arg):
     out = [bilgi("yetenekler:")]
     for s in hepsi():
         isaret = RENK.get(s.risk.value, "●")
-        out.append(satir(f"  {isaret} {s.ad:<10} {s.aciklama}"))
+        out.append(satir(f"  {isaret} {s.ad:<11} {s.aciklama}"))
     out.append(bilgi(""))
     out.append(bilgi("● yeşil/sarı: doğrudan çalışır   ▲ turuncu: onay ister"))
     return out
