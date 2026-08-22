@@ -165,6 +165,7 @@ function baglan(){
   sock.onopen = ()=>{ durum(true); if(!hazir){ hazir = true; uyan(); } };
   sock.onmessage = e=>{
     const m = JSON.parse(e.data);
+    bekletme(false);
     if(m.bitti) return;
     say(m.text, m.cls || '');
   };
@@ -187,8 +188,22 @@ function gonder(raw){
     [...flow.querySelectorAll('.row')].forEach(n=>n.remove());
     return;
   }
-  if(sock && sock.readyState === WebSocket.OPEN) sock.send(JSON.stringify({cmd: t}));
+  if(sock && sock.readyState === WebSocket.OPEN){
+    sock.send(JSON.stringify({cmd: t}));
+    bekletme(true);
+  }
   else say('çekirdek kapalı — run.py çalışmıyor.', 'warn');
+}
+
+/* Serbest cümle niyet çözücüye gidince yanıt saniyeler sürebilir; kabuk
+   donmuş görünmemeli. Kabuk ne beklediğini bilmez, sadece beklediğini bilir. */
+let beklerSatir = null;
+function bekletme(acik){
+  if(acik){
+    if(!beklerSatir) beklerSatir = say('…', 'dim');
+  } else if(beklerSatir){
+    beklerSatir.remove(); beklerSatir = null;
+  }
 }
 line.addEventListener('keydown', e=>{
   if(e.key === 'Enter'){ gonder(line.value); line.value = ''; }

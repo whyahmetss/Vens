@@ -45,6 +45,7 @@ core/
   kurallar.py     kurallar.yaml okuyucu + doğrulayıcı
   denetci.py      kural ihlali denetleyicisi (deterministik)
   jurnal.py       işlem kaydı biçimi + jsonl depo
+  niyet.py        serbest cümle → yetenek eşlemesi (Faz 3)
   router.py       yönlendirme, risk kapısı, onay akışı
   log.py          jsonl olay günlüğü
   server.py       fastapi + websocket + kabuk servisi
