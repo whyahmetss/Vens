@@ -26,6 +26,10 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `notlar [adet]` | son notlar |
 | `fiyat <sembol>` | canlı spot fiyat (`fiyat BTC`) |
 | `kurallar` | aktif kuralları ve kural dosyasındaki sorunları göster |
+| `ihlaller [adet]` | kaydedilmiş kural ihlalleri ve dağılımı |
+| `jurnal <alan=değer>` | işlem kaydı ekle, kayıt anında kural denetimi |
+| `kayitlar [adet]` | son jurnal kayıtları |
+| `kayit <id>` | tek kaydın tamamı |
 | `log [adet]` | son olaylar |
 | `temizle` | ekranı boşalt (kabukta çalışır, çekirdeğe gitmez) |
 
@@ -36,6 +40,8 @@ run.py            başlatıcı — skills/ klasörünü otomatik tarar
 core/
   registry.py     yetenek kayıt defteri, risk sınıfları, izinler
   kurallar.py     kurallar.yaml okuyucu + doğrulayıcı
+  denetci.py      kural ihlali denetleyicisi (deterministik)
+  jurnal.py       işlem kaydı biçimi + jsonl depo
   router.py       yönlendirme, risk kapısı, onay akışı
   log.py          jsonl olay günlüğü
   server.py       fastapi + websocket + kabuk servisi
@@ -43,7 +49,7 @@ skills/           her dosya bir yetenek grubu
 ui/index.html     kabuk
 ```
 
-Veri `~/.venus/` altında: `olaylar.jsonl`, `notlar.jsonl`.
+Veri `~/.venus/` altında: `olaylar.jsonl`, `notlar.jsonl`, `jurnal.jsonl`, `ihlaller.jsonl`.
 `VENUS_VERI` ortam değişkeniyle değiştirilebilir.
 
 ## Yeni yetenek eklemek

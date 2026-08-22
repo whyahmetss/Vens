@@ -11,14 +11,14 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 - [ ] `kurallar.yaml` doldurulacak *(kullanıcı yapar)*
 - [x] `core/kurallar.py` — yaml okuyucu + doğrulayıcı
 - [x] `skills/kural.py` — `kurallar` komutu, aktif kuralları listeler
-- [ ] Kural ihlali tespiti (deterministik, LLM yok)
-- [ ] İhlaller `~/.venus/ihlaller.jsonl` dosyasına yazılır
+- [x] Kural ihlali tespiti (deterministik, LLM yok)
+- [x] İhlaller `~/.venus/ihlaller.jsonl` dosyasına yazılır
 
 ## Faz 2 — jurnal
 
-- [ ] `skills/jurnal.py` — kayıt ekleme, zorunlu alan kontrolü
-- [ ] Jurnal listeleme ve tek kayıt görüntüleme
-- [ ] Kayıt anında kural denetimi
+- [x] `skills/jurnal.py` — kayıt ekleme, zorunlu alan kontrolü
+- [x] Jurnal listeleme ve tek kayıt görüntüleme
+- [x] Kayıt anında kural denetimi
 - [ ] `jurnal istatistik` — R ortalaması, win rate, setup dağılımı
 - [ ] Eksik jurnal hatırlatması
 

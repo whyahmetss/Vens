@@ -56,3 +56,33 @@ async def _kurallar(arg):
 
     out.append(bilgi(f"kaynak: {k.dosya}"))
     return out
+
+
+@skill("ihlaller", "kaydedilmiş kural ihlalleri", Risk.YESIL, izinler=(Perm.OKUMA,),
+       kullanim="ihlaller [adet]")
+async def _ihlaller(arg):
+    from core import denetci
+
+    try:
+        n = int(arg.strip()) if arg.strip() else 20
+    except ValueError:
+        n = 20
+
+    kayitlar = denetci.oku(n)
+    if not kayitlar:
+        return [bilgi("kayıtlı ihlal yok.")]
+
+    # İşlemin zamanı gösterilir, kaydın yazıldığı zaman değil: bir günlük
+    # işlemler gece toplu girilmiş olabilir, o zaman kayıt saati yanıltır.
+    out = [satir(f"  {str(i.get('islem_t') or i['t'])[5:16].replace('T', ' ')}  "
+                 f"{(i.get('sembol') or '—'):<8} {i['mesaj']}") for i in kayitlar]
+
+    # Hangi kuralı ne sıklıkla çiğnediğin, tek tek ihlallerden daha çok şey söyler.
+    sayac: dict[str, int] = {}
+    for i in kayitlar:
+        sayac[i["kural"]] = sayac.get(i["kural"], 0) + 1
+    out.append(bilgi(""))
+    out.append(bilgi(f"son {len(kayitlar)} ihlalin dağılımı:"))
+    for kural, adet in sorted(sayac.items(), key=lambda x: -x[1]):
+        out.append(satir(f"  {kural:<34} {adet}"))
+    return out
