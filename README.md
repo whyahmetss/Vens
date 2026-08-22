@@ -34,6 +34,7 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 run.py            başlatıcı — skills/ klasörünü otomatik tarar
 core/
   registry.py     yetenek kayıt defteri, risk sınıfları, izinler
+  kurallar.py     kurallar.yaml okuyucu + doğrulayıcı
   router.py       yönlendirme, risk kapısı, onay akışı
   log.py          jsonl olay günlüğü
   server.py       fastapi + websocket + kabuk servisi

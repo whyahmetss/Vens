@@ -9,7 +9,7 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 
 - [ ] `kimlik.md` doldurulacak *(kullanıcı yapar)*
 - [ ] `kurallar.yaml` doldurulacak *(kullanıcı yapar)*
-- [ ] `core/kurallar.py` — yaml okuyucu + doğrulayıcı
+- [x] `core/kurallar.py` — yaml okuyucu + doğrulayıcı
 - [ ] `skills/kural.py` — `kurallar` komutu, aktif kuralları listeler
 - [ ] Kural ihlali tespiti (deterministik, LLM yok)
 - [ ] İhlaller `~/.venus/ihlaller.jsonl` dosyasına yazılır
