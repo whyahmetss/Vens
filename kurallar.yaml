@@ -1,0 +1,38 @@
+# VENÜS — kurallar
+#
+# Kullanıcının kendi koyduğu kurallar. Faz 1'deki denetleyici bu dosyayı okur.
+# Denetleyici DETERMİNİSTİK KODDUR — LLM'e sorulmaz.
+#
+# Venüs ihlali ENGELLEMEZ, KAYDEDER. Uzun vadede en değerli veri budur:
+# hangi kuralı, hangi durumda, ne sıklıkla çiğniyorsun.
+#
+# DOLDURULMAYI BEKLİYOR. Aşağıdaki değerler örnektir, kendi kurallarını yaz.
+
+trading:
+  gunluk_islem_limiti: 2
+  maks_risk_yuzde: 1.0
+  min_rr: 2.0
+  gunluk_maks_kayip_r: 2.0
+
+  izinli_seanslar:
+    - londra
+    - new_york_am
+
+  # jurnal kaydında boş bırakılamayacak alanlar
+  zorunlu_alanlar:
+    - setup
+    - giris_sebebi
+    - duygu
+
+  # tespit edilip kaydedilecek davranışlar
+  yasak:
+    - stop_genisletme
+    - kayip_sonrasi_bekleme_ihlali
+    - plan_disi_giris
+
+  kayip_sonrasi_bekleme_dk: 30
+
+calisma:
+  # ileride kullanılacak — şimdilik boş bırakılabilir
+  gunluk_odak_saati: null
+  gece_calisma_uyarisi_saat: null
