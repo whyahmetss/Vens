@@ -26,6 +26,7 @@ import time
 from dataclasses import dataclass
 
 from . import log
+from . import model as model_secimi
 from .registry import hepsi
 
 # Araç adı kısıtı: modele verilen ad ^[a-zA-Z0-9_-]{1,64}$ olmalı. Türkçe
@@ -34,7 +35,8 @@ AD_KALIBI = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 
 ANLASILMADI = "anlasilmadi"
 
-VARSAYILAN_MODEL = "claude-opus-5"
+# Bu görevin modeli core/model.py'deki tabloda; her görev kendi modelini seçer.
+GOREV = "niyet"
 
 SISTEM = """Sen VENÜS'ün niyet çözücüsüsün. Tek işin var: kullanıcının cümlesini
 verilen yeteneklerden BİRİNE eşlemek.
@@ -61,7 +63,7 @@ class Niyet:
 
 
 def model() -> str:
-    return os.environ.get("VENUS_MODEL", VARSAYILAN_MODEL).strip()
+    return model_secimi.sec(GOREV)
 
 
 def acik_mi() -> bool:

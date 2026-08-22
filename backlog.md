@@ -24,7 +24,7 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 
 ## Faz 3 — niyet çözücü
 
-- [ ] Model seçimi *(kullanıcı kararı — bkz. şartname Bölüm 15)*
+- [x] Model seçimi — görev başına tablo, `core/model.py` *(kullanıcı kararı)*
 - [x] `core/niyet.py` — `/yetenekler`den araç tanımı üretimi
 - [x] Liste dışı yetenek dönerse reddetme
 - [x] Kabukta serbest cümle girişi

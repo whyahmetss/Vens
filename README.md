@@ -46,6 +46,7 @@ core/
   denetci.py      kural ihlali denetleyicisi (deterministik)
   jurnal.py       işlem kaydı biçimi + jsonl depo
   niyet.py        serbest cümle → yetenek eşlemesi (Faz 3)
+  model.py        görev başına model seçimi
   router.py       yönlendirme, risk kapısı, onay akışı
   log.py          jsonl olay günlüğü
   server.py       fastapi + websocket + kabuk servisi
@@ -100,6 +101,55 @@ jurnal sembol=XAUUSD yon=long seans=londra risk=1 hedef_r=3 sonuc_r=2.4 \
 Giriş serbest cümle değil `alan=değer`: niyet çözücü Faz 3'te geliyor, o zamana kadar
 giriş tahmin edilmemeli. `zaman=SS:DD` işlemin zamanını kaydın zamanından ayırır —
 gece toplu girilen kayıtlarda "kayıp sonrası bekleme" kuralı yoksa anlamsızlaşır.
+
+## Serbest cümle (Faz 3)
+
+Bilinen bir komut yazarsan doğrudan çalışır — model devreye girmez, gecikme ve
+maliyet sıfırdır. Komut olarak tanınmayan bir girdi niyet çözücüye düşer:
+
+```
+> bitcoin ne kadar olmuş
+→ fiyat BTC
+BTC  108,412.5
+```
+
+Ne anlaşıldığı her zaman `→` satırında gösterilir; yanlış eşlemeyi görmeden
+sonuç almazsın. Modele "ne yapayım" değil "hangi yeteneği hangi parametreyle
+çağırayım" sorulur, tek çağrıda — ajan döngüsü yoktur, model hiçbir şey
+çalıştırmaz. Kayıt defterinde olmayan bir ad dönerse çağrı reddedilir ve
+`Risk.TURUNCU` yetenekler niyetle gelse de onay ister.
+
+### Kurulum
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...     # console.anthropic.com
+python run.py
+```
+
+Anahtar yoksa, `anthropic` paketi kurulu değilse ya da ağ düşerse kabuk eskisi
+gibi deterministik çalışır ve sebebini söyler. Niyet çözücü bir kolaylıktır,
+bağımlılık değildir. `VENUS_NIYET=kapali` ile büsbütün kapatılır.
+
+### Model seçimi
+
+Tek bir "Venüs modeli" yok — her LLM görevi kendi modelini seçer, tablo
+`core/model.py`'de:
+
+| görev | varsayılan | ne yapar |
+|---|---|---|
+| `niyet` | `claude-opus-5` | serbest cümleyi kapalı yetenek listesine eşler |
+
+Değiştirmek için tabloyu düzenle, ya da denemek için:
+
+```bash
+VENUS_MODEL_NIYET=claude-haiku-4-5 python run.py   # tek görevi
+VENUS_MODEL=claude-sonnet-5 python run.py          # hepsini birden
+```
+
+Çağrı başına ~1600 jeton girdi gider (araç listesi + sistem metni). Bu prompt
+cache eşiğinin üstünde olduğu için arka arkaya cümlelerde girdi belirgin
+ucuzlar. Jeton sayıları `olaylar.jsonl`'a yazılır — maliyet tahmin edilmez,
+ölçülür: `log` komutuyla bakılır.
 
 ## Sonraki adım
 
