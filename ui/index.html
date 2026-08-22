@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VENÜS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#040604;
+    --panel:#0B0F0C;
+    --ink:#E8F0E8;
+    --gray:#6E7A6E;
+    --neon:#00FF41;
+    --warn:#FFB03A;
+    --rule:rgba(255,255,255,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--void);color:var(--ink);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
+    overflow:hidden;-webkit-font-smoothing:antialiased;
+  }
+  .veil{position:fixed;inset:0;pointer-events:none;z-index:60}
+  .veil::before{content:'';position:absolute;inset:0;
+    background:repeating-linear-gradient(to bottom,transparent 0 3px,rgba(0,0,0,.22) 3px 4px)}
+  .veil::after{content:'';position:absolute;inset:0;
+    background:radial-gradient(ellipse at 50% 40%,transparent 50%,rgba(0,0,0,.75) 100%)}
+
+  .shell{height:100%;display:grid;grid-template-rows:auto 1fr auto;
+         gap:12px;padding:16px;max-width:1180px;margin:0 auto}
+
+  /* --- üst ray: minimal (Bölüm 13) --- */
+  .rail{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;
+        border-bottom:1px solid var(--rule);padding-bottom:12px}
+  .mark{display:flex;align-items:baseline;gap:10px}
+  .mark h1{font-family:'VT323',monospace;font-size:34px;letter-spacing:.14em;
+           font-weight:400;color:var(--ink);line-height:1}
+  .state{font-size:9px;letter-spacing:.22em;color:var(--neon);text-transform:uppercase}
+  .pip{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--neon);
+       box-shadow:0 0 8px var(--neon);margin-right:6px;animation:beat 2.6s infinite}
+  .pip.off{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+  @keyframes beat{0%,100%{opacity:1}50%{opacity:.3}}
+  .meta{display:flex;gap:22px;justify-content:flex-end;text-align:right}
+  .cell .k{font-size:9px;letter-spacing:.2em;color:var(--gray);text-transform:uppercase}
+  .cell .v{font-size:13px;font-weight:500}
+  .stamp{font-family:'VT323',monospace;font-size:30px;line-height:1;letter-spacing:.03em}
+
+  /* --- akış --- */
+  .flow{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#253025 transparent;padding-right:4px}
+  .flow::-webkit-scrollbar{width:5px}
+  .flow::-webkit-scrollbar-thumb{background:#253025}
+  .row{white-space:pre-wrap;word-break:break-word;line-height:1.6}
+  .row.dim{color:var(--gray)}
+  .row.warn{color:var(--warn)}
+  .row.hi{color:var(--neon)}
+  .row.echo{color:var(--gray)}
+  .row.wake{font-family:'VT323',monospace;font-size:30px;color:var(--ink);
+            margin:18px 0 6px;letter-spacing:.04em}
+  .row.wake b{color:var(--neon);font-weight:400;text-shadow:0 0 18px rgba(0,255,65,.45)}
+
+  .ask{display:flex;gap:10px;align-items:baseline;margin-top:10px;
+       border-top:1px solid var(--rule);padding-top:12px}
+  .ask .sig{color:var(--neon);flex-shrink:0}
+  #line{flex:1;background:none;border:0;outline:none;color:var(--ink);
+        font:inherit;caret-color:var(--neon)}
+
+  .foot{display:flex;justify-content:space-between;align-items:center;
+        font-size:10px;letter-spacing:.16em;color:var(--gray);text-transform:uppercase}
+
+  @media (max-width:640px){
+    .rail{grid-template-columns:1fr;gap:10px}
+    .meta{justify-content:flex-start;text-align:left;gap:18px}
+    .mark h1{font-size:28px}
+    .row.wake{font-size:22px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .veil::before{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="veil"></div>
+
+<div class="shell">
+  <header class="rail">
+    <div class="mark">
+      <h1>VENÜS</h1>
+      <span class="state" id="state"><span class="pip"></span>çevrimdışı</span>
+    </div>
+    <div></div>
+    <div class="meta">
+      <div class="cell"><div class="k">oturum</div><div class="v" id="up">00:00:00</div></div>
+      <div class="cell"><div class="k">tarih</div><div class="v" id="date">—</div></div>
+      <div class="cell"><div class="k">saat</div><div class="v stamp" id="clock">--:--</div></div>
+    </div>
+  </header>
+
+  <main class="flow" id="flow">
+    <div class="ask" id="ask" hidden>
+      <span class="sig">&gt;</span>
+      <input id="line" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="komut">
+    </div>
+  </main>
+
+  <footer class="foot">
+    <span id="hint">"yardim" — yetenek listesi</span>
+    <span id="count">0 yetenek</span>
+  </footer>
+</div>
+
+<script>
+const flow  = document.getElementById('flow');
+const ask   = document.getElementById('ask');
+const line  = document.getElementById('line');
+const boot  = Date.now();
+
+const pad = n => String(n).padStart(2,'0');
+
+function say(text, cls=''){
+  const el = document.createElement('div');
+  el.className = 'row ' + cls;
+  if(cls === 'wake') el.innerHTML = text;
+  else el.textContent = text;
+  flow.insertBefore(el, ask);
+  flow.scrollTop = flow.scrollHeight;
+  return el;
+}
+function typeOut(text, cls='', ms=18){
+  return new Promise(done=>{
+    const el = say('', cls); let i = 0;
+    const t = setInterval(()=>{
+      el.textContent = text.slice(0, ++i);
+      flow.scrollTop = flow.scrollHeight;
+      if(i >= text.length){ clearInterval(t); done(); }
+    }, ms);
+  });
+}
+const pause = ms => new Promise(r=>setTimeout(r, ms));
+
+/* --- üst ray --- */
+setInterval(()=>{
+  const d = new Date();
+  document.getElementById('clock').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  document.getElementById('date').textContent =
+    d.toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}).toUpperCase();
+  const s = Math.floor((Date.now()-boot)/1000);
+  document.getElementById('up').textContent =
+    `${pad(Math.floor(s/3600))}:${pad(Math.floor(s/60)%60)}:${pad(s%60)}`;
+}, 1000);
+
+function durum(on){
+  document.getElementById('state').innerHTML =
+    `<span class="pip${on?'':' off'}"></span>${on ? 'çevrimiçi' : 'bağlanıyor'}`;
+}
+
+/* --- çekirdek köprüsü --- */
+let sock = null, hazir = false;
+function baglan(){
+  sock = new WebSocket(`ws://${location.host}/ws`);
+  sock.onopen = ()=>{ durum(true); if(!hazir){ hazir = true; uyan(); } };
+  sock.onmessage = e=>{
+    const m = JSON.parse(e.data);
+    if(m.bitti) return;
+    say(m.text, m.cls || '');
+  };
+  sock.onclose = ()=>{ durum(false); setTimeout(baglan, 2500); };
+  sock.onerror = ()=>sock.close();
+}
+
+fetch('/yetenekler').then(r=>r.json())
+  .then(y=>document.getElementById('count').textContent = `${y.length} yetenek`)
+  .catch(()=>{});
+
+/* --- girdi --- */
+const gecmis = []; let gi = -1;
+function gonder(raw){
+  const t = raw.trim();
+  say(`> ${t}`, 'echo');
+  if(!t) return;
+  gecmis.push(t); gi = gecmis.length;
+  if(t.toLowerCase() === 'temizle'){
+    [...flow.querySelectorAll('.row')].forEach(n=>n.remove());
+    return;
+  }
+  if(sock && sock.readyState === WebSocket.OPEN) sock.send(JSON.stringify({cmd: t}));
+  else say('çekirdek kapalı — run.py çalışmıyor.', 'warn');
+}
+line.addEventListener('keydown', e=>{
+  if(e.key === 'Enter'){ gonder(line.value); line.value = ''; }
+  else if(e.key === 'ArrowUp' && gi > 0){ line.value = gecmis[--gi]; e.preventDefault(); }
+  else if(e.key === 'ArrowDown'){ gi = Math.min(gi+1, gecmis.length); line.value = gecmis[gi] || ''; }
+});
+flow.addEventListener('click', ()=>line.focus());
+
+/* --- uyanış --- */
+async function uyan(){
+  await typeOut('çekirdek başlatılıyor', 'dim', 22);
+  await pause(160);
+  for(const p of ['yetenek kayıt defteri','olay günlüğü','köprü']){
+    say(`  ${p}`, 'dim'); await pause(110);
+  }
+  await pause(260);
+  say('VENÜS <b>hazır</b>', 'wake');
+  await pause(150);
+  say('nasıl yardımcı olabilirim?', 'dim');
+  ask.hidden = false;
+  line.focus();
+}
+baglan();
+</script>
+</body>
+</html>
