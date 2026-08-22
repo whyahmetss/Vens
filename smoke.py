@@ -8,7 +8,7 @@ from core import kurallar
 
 async def main():
     print("yetenekler:", sorted(REGISTRY))
-    for cmd in ["yardim", "saat", "sistem", "not test kaydi", "notlar", "fiyat BTC", "log 5", "zirva"]:
+    for cmd in ["yardim", "saat", "sistem", "not test kaydi", "notlar", "fiyat BTC", "kurallar", "log 5", "zirva"]:
         out = await yonlendir(cmd, "smoke")
         print(f"\n$ {cmd}")
         for l in out[:6]:

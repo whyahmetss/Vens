@@ -25,6 +25,7 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `not <metin>` | hızlı not |
 | `notlar [adet]` | son notlar |
 | `fiyat <sembol>` | canlı spot fiyat (`fiyat BTC`) |
+| `kurallar` | aktif kuralları ve kural dosyasındaki sorunları göster |
 | `log [adet]` | son olaylar |
 | `temizle` | ekranı boşalt (kabukta çalışır, çekirdeğe gitmez) |
 
