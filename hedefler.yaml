@@ -1,0 +1,62 @@
+# VENÜS — hedefler
+#
+# Bir hedef üç şeyden oluşur: NE, NE ZAMANA KADAR, ve NASIL ÖLÇÜLECEK.
+# Üçü de olmayan bir hedef dilektir; Venüs dilek takip etmez.
+#
+# İki tür var:
+#   unite      — sıralı bir müfredat var, ilerleme = kaç ünite bitti
+#   aliskanlik — ünite yok, ilerleme = süreklilik ve toplam süre
+#
+# DOLDURULMAYI BEKLİYOR. Aşağıdakiler senin söylediğin iki hedefin taslağı;
+# üniteleri kendi kursuna/mentorship'ine göre değiştir.
+
+hedefler:
+
+  ingilizce_a2:
+    ad: "İngilizce A2"
+    tur: unite
+    bitis: "2026-09-22"          # bir ay
+    # Günde kaç kart tekrar edileceği. Aralıklı tekrar motoru bunu üst sınır
+    # olarak kullanır — biriken kart varsa hepsini bir günde yığmaz.
+    gunluk_kart: 20
+    # `kart-uret` bu satırı olduğu gibi kart üreticisine iletir. Yazılmazsa
+    # yönerge verilmez; Venüs hedefin adından dil tahmin etmez.
+    dil_notu: "Soru Türkçe sorulsun, cevap İngilizce olsun."
+    unite:
+      - to_be
+      - present_simple
+      - present_continuous
+      - past_simple
+      - there_is_are
+      - countables
+      - comparatives
+      - can_could
+      - going_to
+      - prepositions_time
+      - prepositions_place
+      - question_words
+
+  ict_mentorship:
+    ad: "ICT Mentorship"
+    tur: unite
+    bitis: "2026-10-23"          # iki ay
+    gunluk_kart: 10
+    unite:
+      - market_structure
+      - liquidity_bsl_ssl
+      - eqh_eql
+      - bos
+      - choch
+      - mss
+      - fvg
+      - order_block
+      - ote
+      - killzones
+      - htf_bias
+      - risk_model
+
+  ingilizce_pratik:
+    ad: "Günlük İngilizce pratiği"
+    tur: aliskanlik
+    bitis: null                  # bitiş yok, süreklilik hedefi
+    gunluk_dakika: 30
