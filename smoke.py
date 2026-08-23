@@ -1,5 +1,18 @@
 import asyncio, sys
 sys.path.insert(0, ".")
+
+
+def _duz(l):
+    """Kabuk satırının metin karşılığı. Hizalama kabuğun işi; burada kaba dök."""
+    if "etiket" in l:
+        return f"{l['etiket']:<26} {l['deger']}"
+    if "baslik" in l:
+        return f"[{l['baslik']}]"
+    if "bosluk" in l:
+        return ""
+    return l.get("text", "")
+
+
 from run import yetenekleri_yukle
 yetenekleri_yukle()
 from core.registry import REGISTRY
@@ -16,7 +29,7 @@ async def main():
         out = await yonlendir(cmd, "smoke")
         print(f"\n$ {cmd}")
         for l in out[:6]:
-            print("   ", l["text"])
+            print("   ", _duz(l))
 
     k = kurallar.yukle()
     print(f"\n# kurallar  ({k.dosya.name}, okundu={k.okundu}, {len(k.tum())} kural)")

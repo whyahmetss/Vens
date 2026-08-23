@@ -18,7 +18,7 @@ import os
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from core.registry import Risk, Perm, skill, satir, bilgi, uyari, vurgu
+from core.registry import Risk, Perm, skill, bilgi, uyari, alan, baslik, bosluk
 from core.zamanlayici import periyodik
 from core.bildirim import Seviye, bildir, hepsi as bildirim_hepsi
 from core import kurallar as kural_motoru
@@ -75,14 +75,20 @@ def durum(simdi: datetime | None = None) -> list[dict]:
 async def _seans(arg):
     izinli = kural_motoru.yukle().deger("trading.izinli_seanslar", ())
     yerel = yerel_dilim()
-    out = [bilgi(f"saat dilimi: {yerel.key}")]
+    out = [baslik(f"killzone · {yerel.key}")]
     for d in durum():
-        isaret = "●" if d["acik"] else " "
-        not_ = "" if d["ad"] in izinli else "   izinli değil"
-        cizgi = (f" {isaret} {d['ad']:<16} {d['bas']:%H:%M} — {d['bit']:%H:%M}{not_}")
-        out.append(vurgu(cizgi) if d["acik"] else satir(cizgi))
+        # Açık olan seans vurgulanır, izlenmeyen sönükleşir — durum renkle
+        # anlatılır, boşlukla değil.
+        if d["acik"]:
+            cls = "acik"
+        elif d["ad"] in izinli:
+            cls = ""
+        else:
+            cls = "dim"
+        etiket = ("● " if d["acik"] else "") + d["ad"]
+        out.append(alan(etiket, f"{d['bas']:%H:%M} — {d['bit']:%H:%M}", cls))
     if not izinli:
-        out.append(bilgi(""))
+        out.append(bosluk())
         out.append(uyari("kurallar.yaml'da izinli seans tanımlı değil — "
                          "hiçbir seans hatırlatılmaz."))
     return out

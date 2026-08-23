@@ -4,7 +4,7 @@ from pathlib import Path
 
 import psutil
 
-from core.registry import Risk, Perm, skill, satir, bilgi, hepsi
+from core.registry import Risk, Perm, skill, satir, bilgi, hepsi, alan, baslik, bosluk
 from core import log
 
 RENK = {"yesil": "●", "sari": "●", "turuncu": "▲", "kirmizi": "■"}
@@ -12,12 +12,13 @@ RENK = {"yesil": "●", "sari": "●", "turuncu": "▲", "kirmizi": "■"}
 
 @skill("yardim", "yetenek listesi", Risk.YESIL, takma_adlar=("help", "?"))
 async def _yardim(arg):
-    out = [bilgi("yetenekler:")]
+    out = [baslik(f"{len(hepsi())} yetenek")]
     for s in hepsi():
         isaret = RENK.get(s.risk.value, "●")
-        out.append(satir(f"  {isaret} {s.ad:<11} {s.aciklama}"))
-    out.append(bilgi(""))
-    out.append(bilgi("● yeşil/sarı: doğrudan çalışır   ▲ turuncu: onay ister"))
+        out.append(alan(f"{isaret} {s.ad}", s.aciklama,
+                        "warn" if s.risk.value == "turuncu" else ""))
+    out.append(bosluk())
+    out.append(bilgi("● doğrudan çalışır   ▲ onay ister"))
     return out
 
 
@@ -39,10 +40,10 @@ async def _sistem(arg):
     vm = psutil.virtual_memory()
     du = psutil.disk_usage(str(Path.home()))
     return [
-        satir(f"platform : {platform.system()} {platform.release()}"),
-        satir(f"cpu      : %{psutil.cpu_percent(interval=0.3):.0f}  ({psutil.cpu_count()} çekirdek)"),
-        satir(f"bellek   : %{vm.percent:.0f}  ({vm.used/1e9:.1f} / {vm.total/1e9:.1f} GB)"),
-        satir(f"disk     : %{du.percent:.0f}  ({du.free/1e9:.0f} GB boş)"),
+        alan("platform", f"{platform.system()} {platform.release()}"),
+        alan("cpu", f"%{psutil.cpu_percent(interval=0.3):.0f}   {psutil.cpu_count()} çekirdek"),
+        alan("bellek", f"%{vm.percent:.0f}   {vm.used/1e9:.1f} / {vm.total/1e9:.1f} GB"),
+        alan("disk", f"%{du.percent:.0f}   {du.free/1e9:.0f} GB boş"),
     ]
 
 
@@ -58,8 +59,8 @@ async def _log(arg):
         return [bilgi("henüz kayıt yok.")]
     out = []
     for k in kayitlar:
-        saat = k["t"][11:19]
         ozet = k.get("yetenek") or k.get("girdi", "")
         sonuc = k.get("sonuc", "")
-        out.append(satir(f"  {saat}  {k['tur']:<13} {ozet:<12} {sonuc}"))
+        out.append(alan(f"{k['t'][11:19]}  {k['tur']}",
+                        f"{ozet}{'   ' + sonuc if sonuc else ''}"))
     return out

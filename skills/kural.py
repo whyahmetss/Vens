@@ -6,7 +6,7 @@ Kural değiştirmek buradan yapılmaz: kurallar.yaml düzenlenir. Kuralın tek
 bir yeri olması, "Venüs'e söyledim ama dosyada yok" durumunu imkânsız kılar.
 """
 
-from core.registry import Risk, Perm, skill, satir, bilgi, uyari, vurgu
+from core.registry import Risk, Perm, skill, satir, bilgi, uyari, alan, baslik, bosluk
 from core import kurallar as kural_motoru
 
 # Ekran etiketi ve biçim. Alan adları kurallar.yaml'daki hâliyle kalır,
@@ -40,19 +40,19 @@ async def _kurallar(arg):
 
     out = []
     for bolum, alanlar in k.bolumler.items():
-        out.append(vurgu(BOLUM_BASLIK.get(bolum, bolum)))
-        for alan, deger in alanlar.items():
-            etiket, bicim = ETIKET.get(f"{bolum}.{alan}", (alan, str))
-            out.append(satir(f"  {etiket:<22} {bicim(deger)}"))
-        out.append(bilgi(""))
+        out.append(baslik(BOLUM_BASLIK.get(bolum, bolum)))
+        for ad, deger in alanlar.items():
+            etiket, bicim = ETIKET.get(f"{bolum}.{ad}", (ad, str))
+            out.append(alan(etiket, bicim(deger)))
+        out.append(bosluk())
 
     if not k.bolumler:
         out.append(bilgi("tanımlı kural yok — kurallar.yaml boş."))
 
     if k.sorunlar:
-        out.append(uyari(f"{len(k.sorunlar)} sorun var, bu satırlar yok sayılıyor:"))
-        out += [satir(f"  {s}") for s in k.sorunlar]
-        out.append(bilgi(""))
+        out.append(baslik(f"{len(k.sorunlar)} sorun — bu satırlar yok sayılıyor"))
+        out += [alan(s.yol, s.mesaj, "warn") for s in k.sorunlar]
+        out.append(bosluk())
 
     out.append(bilgi(f"kaynak: {k.dosya}"))
     return out
@@ -74,15 +74,15 @@ async def _ihlaller(arg):
 
     # İşlemin zamanı gösterilir, kaydın yazıldığı zaman değil: bir günlük
     # işlemler gece toplu girilmiş olabilir, o zaman kayıt saati yanıltır.
-    out = [satir(f"  {str(i.get('islem_t') or i['t'])[5:16].replace('T', ' ')}  "
-                 f"{(i.get('sembol') or '—'):<8} {i['mesaj']}") for i in kayitlar]
+    out = [alan(f"{str(i.get('islem_t') or i['t'])[5:16].replace('T', ' ')}  "
+                f"{i.get('sembol') or '—'}", i["mesaj"], "warn") for i in kayitlar]
 
     # Hangi kuralı ne sıklıkla çiğnediğin, tek tek ihlallerden daha çok şey söyler.
     sayac: dict[str, int] = {}
     for i in kayitlar:
         sayac[i["kural"]] = sayac.get(i["kural"], 0) + 1
-    out.append(bilgi(""))
-    out.append(bilgi(f"son {len(kayitlar)} ihlalin dağılımı:"))
+    out.append(bosluk())
+    out.append(baslik(f"son {len(kayitlar)} ihlalin dağılımı"))
     for kural, adet in sorted(sayac.items(), key=lambda x: -x[1]):
-        out.append(satir(f"  {kural:<34} {adet}"))
+        out.append(alan(kural, adet))
     return out

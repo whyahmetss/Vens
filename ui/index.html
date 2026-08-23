@@ -152,6 +152,38 @@
               padding:12px 14px}
   .rail{border-bottom:1px solid var(--rule)}
 
+  /* --- yanıt paneli: her komut bir kart, akan döküm değil --- */
+  .panel{border:1px solid var(--rule);border-left:2px solid rgba(0,255,65,.45);
+         border-radius:3px;margin:14px 0;
+         background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,.008));
+         animation:panelGir .26s cubic-bezier(.2,.8,.25,1) both}
+  .panel > .ust{display:flex;justify-content:space-between;align-items:baseline;
+                gap:12px;padding:8px 14px;border-bottom:1px solid var(--rule)}
+  /* Uzun jurnal komutu başlığı ele geçirmesin; tamamı title'da durur. */
+  .panel .komut{font-size:10px;letter-spacing:.2em;color:var(--neon);
+                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .panel .damga{font-size:10px;letter-spacing:.14em;color:var(--gray)}
+  .panel > .govde{padding:11px 14px 13px}
+  .panel.uyarili{border-left-color:var(--warn)}
+  .panel.uyarili .komut{color:var(--warn)}
+  @keyframes panelGir{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* alan: hizayı ızgara verir, boşluk karakteri değil */
+  .alan{display:grid;grid-template-columns:minmax(120px,204px) 1fr;gap:10px 18px;
+        padding:2.5px 0;line-height:1.55}
+  .alan .et{color:var(--gray);font-size:11.5px;letter-spacing:.05em;
+            overflow-wrap:anywhere}
+  /* Yetenek değer içinde bilerek boşlukla ayırabiliyor; HTML ezmesin. */
+  .alan .dg{color:var(--ink);font-weight:500;overflow-wrap:anywhere;white-space:pre-wrap}
+  .alan.dim .et,.alan.dim .dg{color:var(--gray);font-weight:400}
+  .alan.warn .dg{color:var(--warn)}
+  .alan.acik .dg{color:var(--neon)}
+  .alan.acik .et{color:var(--ink)}
+  .bolum{font-size:10px;letter-spacing:.22em;color:var(--neon);
+         opacity:.85;margin:12px 0 6px}
+  .bolum:first-child{margin-top:0}
+  .ara{height:10px}
+
   /* --- yumuşak geçişler: satırlar belirir, çakmaz --- */
   .row{animation:gir .2s ease-out both}
   @keyframes gir{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
@@ -164,6 +196,9 @@
 
   @media (max-width:640px){
     .cekirdek{width:52px;height:52px}
+    /* Dar ekranda iki sütun sıkışır; alan alta iner, hiza yine bozulmaz. */
+    .alan{grid-template-columns:1fr;gap:0;padding:5px 0}
+    .alan .dg{padding-left:0}
     .rail{grid-template-columns:1fr;gap:10px}
     .meta{justify-content:flex-start;text-align:left;gap:18px}
     .mark h1{font-size:28px}
@@ -235,6 +270,11 @@ const boot  = Date.now();
 
 const pad = n => String(n).padStart(2,'0');
 
+/* Türkçe büyük harf: i → İ. CSS text-transform bunu tarayıcıya bırakıyor ve
+   lang="tr" olmasına rağmen her yerde doğru çalışmıyor. Başlıklar Venüs'ün
+   yüzü; "ISTATISTIK" kabul edilemez. */
+const buyuk = t => String(t).toLocaleUpperCase('tr-TR');
+
 /* --- Venüs çekirdeği ---------------------------------------------------
    Gösterge olarak davranır: ne olduğunu söyler, süs olmaz. */
 const cekirdek = document.getElementById('cekirdek');
@@ -265,13 +305,33 @@ function cekirdekUyar(){
 }
 
 function say(text, cls=''){
+  return ekle(kur('row ' + cls, text, cls === 'wake'));
+}
+function kur(cls, text, ham=false){
   const el = document.createElement('div');
-  el.className = 'row ' + cls;
-  if(cls === 'wake') el.innerHTML = text;
-  else el.textContent = text;
-  flow.insertBefore(el, ask);
+  el.className = cls;
+  if(ham) el.innerHTML = text; else el.textContent = text;
+  return el;
+}
+function ekle(el, hedef){
+  if(hedef){ hedef.appendChild(el); panelSatir++; }
+  else flow.insertBefore(el, ask);
   flow.scrollTop = flow.scrollHeight;
   return el;
+}
+
+/* Çekirdekten gelen satırı şekline göre çizer.
+   Hizalama burada yapılır — yetenek boşlukla hizalamaz (Değişmez 6). */
+function cizSatir(m, hedef){
+  if(m.bosluk) return ekle(kur('ara', ''), hedef);
+  if(m.baslik) return ekle(kur('bolum', buyuk(m.baslik)), hedef);
+  if(m.etiket !== undefined){
+    const el = kur('alan ' + (m.cls || ''), '');
+    el.appendChild(kur('et', m.etiket));
+    el.appendChild(kur('dg', m.deger));
+    return ekle(el, hedef);
+  }
+  return ekle(kur('row ' + (m.cls || ''), m.text || ''), hedef);
 }
 function typeOut(text, cls='', ms=18){
   return new Promise(done=>{
@@ -316,8 +376,8 @@ function baglan(){
       return;
     }
     bekletme(false);
-    if(m.bitti) return;
-    say(m.text, m.cls || '');
+    if(m.bitti){ paneliKapat(); return; }
+    cizSatir(m, panelGovde);
   };
   sock.onclose = ()=>{ durum(false); setTimeout(baglan, 2500); };
   sock.onerror = ()=>sock.close();
@@ -341,18 +401,41 @@ function bildirimGoster(m){
   if(m.seviye === 'kritik') cekirdekUyar();
 }
 
+/* --- yanıt paneli ---------------------------------------------------
+   Her komut kendi kartına yazılır. Akan tek bir metin sütunu terminaldir;
+   panel, çıktının nereye ait olduğunu göz seviyesinde ayırır (Bölüm 13). */
+let panel = null, panelGovde = null, panelSatir = 0;
+function paneliAc(komut){
+  paneliKapat();
+  panel = kur('panel', '');
+  const ust = kur('ust', '');
+  const k = kur('komut', buyuk(komut));
+  k.title = komut;
+  ust.appendChild(k);
+  const d = new Date();
+  ust.appendChild(kur('damga', `${pad(d.getHours())}:${pad(d.getMinutes())}`));
+  panelGovde = kur('govde', '');
+  panel.appendChild(ust); panel.appendChild(panelGovde);
+  panelSatir = 0;
+  ekle(panel);
+}
+function paneliKapat(){
+  if(panel && panelSatir === 0) panel.remove();   // çıktısı olmayan panel durmasın
+  panel = null; panelGovde = null;
+}
+
 /* --- girdi --- */
 const gecmis = []; let gi = -1;
 function gonder(raw){
   const t = raw.trim();
-  say(`> ${t}`, 'echo');
   if(!t) return;
   gecmis.push(t); gi = gecmis.length;
   if(t.toLowerCase() === 'temizle'){
-    [...flow.querySelectorAll('.row')].forEach(n=>n.remove());
+    [...flow.querySelectorAll('.row,.panel')].forEach(n=>n.remove());
     return;
   }
   if(sock && sock.readyState === WebSocket.OPEN){
+    paneliAc(t);
     sock.send(JSON.stringify({cmd: t}));
     bekletme(true);
   }
@@ -365,8 +448,10 @@ let beklerSatir = null;
 function bekletme(acik){
   cekirdekDurum('mesgul', acik);
   if(acik){
-    if(!beklerSatir) beklerSatir = say('…', 'dim');
+    // Gösterge panelin içine girer; panel açıkken dışarıda asılı kalmasın.
+    if(!beklerSatir) beklerSatir = ekle(kur('row dim', '…'), panelGovde);
   } else if(beklerSatir){
+    if(panelGovde && beklerSatir.parentNode === panelGovde) panelSatir--;
     beklerSatir.remove(); beklerSatir = null;
   }
 }

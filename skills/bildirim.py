@@ -5,7 +5,7 @@ Bildirim yeteneği — bekleyenleri gösterir ve okundu işaretler.
 rozette bekleyenler ve bütçe dolduğu için kuyruğa alınanlar içindir.
 """
 
-from core.registry import Risk, Perm, skill, satir, bilgi, uyari, vurgu
+from core.registry import Risk, Perm, skill, bilgi, alan, baslik, bosluk
 from core import bildirim as motor
 
 ISARET = {"kritik": "■", "yuksek": "▲", "normal": "●", "dusuk": "·"}
@@ -22,14 +22,14 @@ async def _bildirimler(arg):
         return [bilgi("bekleyen bildirim yok."),
                 bilgi(f"günlük bütçe: {iletilen}/{motor.GUNLUK_BUTCE} kullanıldı.")]
 
-    out = [vurgu(f"{len(bekleyen)} bildirim")]
+    out = [baslik(f"{len(bekleyen)} bildirim")]
     for b in bekleyen:
         isaret = ISARET.get(b.seviye, "●")
-        kuyruk = "  (kuyrukta)" if b.durum == "kuyrukta" else ""
-        cizgi = f"  {isaret} {b.saat}  {b.metin}{kuyruk}"
-        out.append(uyari(cizgi) if b.seviye in ("kritik", "yuksek") else satir(cizgi))
+        kuyruk = "   kuyrukta" if b.durum == "kuyrukta" else ""
+        out.append(alan(f"{isaret} {b.saat}", b.metin + kuyruk,
+                        "warn" if b.seviye in ("kritik", "yuksek") else ""))
 
-    out.append(bilgi(""))
+    out.append(bosluk())
     out.append(bilgi(f"günlük bütçe: {iletilen}/{motor.GUNLUK_BUTCE} kullanıldı"
                      + (f", {kalan} kesinti hakkı kaldı." if kalan else
                         " — bugün başka bildirim ekranı bölmez.")))

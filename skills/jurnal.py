@@ -10,7 +10,7 @@ Kayıt anında kurallar denetlenir ve ihlal **kaydedilir, engellenmez**
 
 from datetime import date, datetime
 
-from core.registry import Risk, Perm, skill, satir, bilgi, uyari, vurgu
+from core.registry import Risk, Perm, skill, satir, bilgi, uyari, vurgu, alan, baslik, bosluk
 from core import jurnal as depo
 from core import denetci
 from core import kurallar as kural_motoru
@@ -100,8 +100,9 @@ async def _kayitlar(arg):
         n = 12
     out = []
     for k in kayitlar[-n:]:
-        isaret = "✗" if k.get("ihlaller") else " "
-        out.append(satir(f" {isaret} {k.get('id', '????')}  {_baslik(k)}"))
+        ihl = k.get("ihlaller")
+        out.append(alan(f"{'✗ ' if ihl else ''}{k.get('id', '????')}", _baslik(k),
+                        "warn" if ihl else ""))
     out.append(bilgi(f"{len(kayitlar)} kayıt · tek kayıt için: kayit <id>"))
     return out
 
@@ -115,10 +116,10 @@ async def _kayit(arg):
     if k is None:
         return [uyari(f"kayıt bulunamadı: {arg.strip()}")]
 
-    out = [vurgu(_baslik(k))]
-    for alan, etiket in SATIRLAR:
-        if k.get(alan):
-            out.append(satir(f"{etiket:<10}: {k[alan]}"))
+    out = [baslik(_baslik(k))]
+    for ad, etiket in SATIRLAR:
+        if k.get(ad):
+            out.append(alan(etiket.lower(), k[ad]))
     if k.get("yon") or k.get("risk") is not None or k.get("hedef_r") is not None:
         parca = []
         if k.get("yon"):
@@ -127,26 +128,26 @@ async def _kayit(arg):
             parca.append(f"risk %{k['risk']:g}")
         if isinstance(k.get("hedef_r"), (int, float)):
             parca.append(f"hedef {k['hedef_r']:g}R")
-        out.append(satir(f"{'PLAN':<10}: {'  '.join(parca)}"))
+        out.append(alan("plan", "  ".join(parca)))
 
-    isaretli = [etiket for alan, etiket in
+    isaretli = [etiket for ad, etiket in
                 (("stop_genisletme", "stop genişletme"), ("plan_disi_giris", "plan dışı giriş"))
-                if k.get(alan) is True]
+                if k.get(ad) is True]
     if isaretli:
-        out.append(satir(f"{'İŞARET':<10}: {', '.join(isaretli)}"))
+        out.append(alan("işaret", ", ".join(isaretli), "warn"))
 
     ihlaller = k.get("ihlaller") or []
-    out.append(satir(f"{'KURAL':<10}: " +
-                     ("✓ ihlal yok" if not ihlaller else f"✗ {len(ihlaller)} ihlal")))
-    out += [uyari(f"            ✗ {m}") for m in ihlaller]
+    out.append(alan("kural", "✓ ihlal yok" if not ihlaller else f"✗ {len(ihlaller)} ihlal",
+                    "" if not ihlaller else "warn"))
+    out += [alan("", f"✗ {m}", "warn") for m in ihlaller]
 
     # Bilinen alanların dışında kalanlar (kullanıcının kendi eklediği alanlar).
     bilinen = {"id", "t", "islem_t", "ihlaller", "yon", "risk", "hedef_r", "sonuc_r",
                "sembol", "stop_genisletme", "plan_disi_giris", *(a for a, _ in SATIRLAR)}
     ekstra = {a: d for a, d in k.items() if a not in bilinen}
     if ekstra:
-        out.append(bilgi(""))
-        out += [satir(f"{a:<10}: {d}") for a, d in ekstra.items()]
+        out.append(bosluk())
+        out += [alan(a, d) for a, d in ekstra.items()]
     return out
 
 
@@ -161,7 +162,7 @@ async def _istatistik(arg):
               if isinstance(k.get("sonuc_r"), (int, float))]
     acik = len(kayitlar) - len(kapali)
 
-    out = [vurgu(f"{len(kayitlar)} kayıt" + (f" · {acik} açık" if acik else ""))]
+    out = [baslik(f"{len(kayitlar)} kayıt" + (f" · {acik} açık" if acik else ""))]
     if not kapali:
         out.append(bilgi("sonuçlanmış kayıt yok — R istatistiği çıkarılamaz."))
         return out
@@ -169,32 +170,32 @@ async def _istatistik(arg):
     rler = [float(k["sonuc_r"]) for k in kapali]
     kazanan = [r for r in rler if r > 0]
     out += [
-        satir(f"  toplam       {sum(rler):+.2f}R"),
-        satir(f"  ortalama     {sum(rler) / len(rler):+.2f}R"),
-        satir(f"  win rate     %{100 * len(kazanan) / len(kapali):.0f}  "
-              f"({len(kazanan)}/{len(kapali)})"),
-        satir(f"  en iyi       {max(rler):+.2f}R"),
-        satir(f"  en kötü      {min(rler):+.2f}R"),
+        alan("toplam",    f"{sum(rler):+.2f}R"),
+        alan("ortalama",  f"{sum(rler) / len(rler):+.2f}R"),
+        alan("win rate",  f"%{100 * len(kazanan) / len(kapali):.0f}  "
+                          f"({len(kazanan)}/{len(kapali)})"),
+        alan("en iyi",    f"{max(rler):+.2f}R"),
+        alan("en kötü",   f"{min(rler):+.2f}R"),
     ]
 
     dagilim: dict[str, list[float]] = {}
     for k in kapali:
         dagilim.setdefault((k.get("setup") or "—").strip(), []).append(float(k["sonuc_r"]))
     if dagilim:
-        out.append(bilgi(""))
-        out.append(bilgi("setup dağılımı:"))
+        out.append(bosluk())
+        out.append(baslik("setup dağılımı"))
         for setup, rs in sorted(dagilim.items(), key=lambda x: -sum(x[1])):
-            out.append(satir(f"  {setup[:28]:<28} {len(rs):>3} işlem  "
-                             f"ort {sum(rs) / len(rs):+.2f}R  top {sum(rs):+.2f}R"))
+            out.append(alan(setup, f"{len(rs)} işlem   ort {sum(rs) / len(rs):+.2f}R"
+                                   f"   top {sum(rs):+.2f}R"))
 
     ihlal_sayisi = sum(len(k.get("ihlaller") or []) for k in kayitlar)
     if ihlal_sayisi:
-        out.append(bilgi(""))
-        out.append(satir(f"  {ihlal_sayisi} kural ihlali kayıtlı — ayrıntı: ihlaller"))
+        out.append(bosluk())
+        out.append(uyari(f"{ihlal_sayisi} kural ihlali kayıtlı — ayrıntı: ihlaller"))
 
     # Az örnekle çıkarılan oran gürültüdür; Venüs emin olmadığını söyler.
     if len(kapali) < 20:
-        out.append(bilgi(""))
+        out.append(bosluk())
         out.append(bilgi(f"{len(kapali)} işlem az — bu oranlar henüz bir şey anlatmıyor."))
     return out
 
@@ -218,11 +219,11 @@ async def _eksik(arg):
 
     out = []
     if acik:
-        out.append(uyari(f"{len(acik)} kayıt sonuçlanmamış:"))
-        out += [satir(f"  {k.get('id', '????')}  {_baslik(k)}") for k in acik[-10:]]
-        out.append(bilgi(""))
+        out.append(baslik(f"{len(acik)} kayıt sonuçlanmamış"))
+        out += [alan(k.get("id", "????"), _baslik(k)) for k in acik[-10:]]
+        out.append(bosluk())
     if bosluklu:
-        out.append(uyari(f"{len(bosluklu)} kayıtta zorunlu alan boş:"))
-        out += [satir(f"  {k.get('id', '????')}  {k.get('sembol', '?')}  → {', '.join(e)}")
+        out.append(baslik(f"{len(bosluklu)} kayıtta zorunlu alan boş"))
+        out += [alan(f"{k.get('id', '????')}  {k.get('sembol', '?')}", ", ".join(e), "warn")
                 for k, e in bosluklu[-10:]]
     return out

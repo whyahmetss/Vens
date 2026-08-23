@@ -75,3 +75,22 @@ def satir(text: str, cls: str = "") -> dict:
 def bilgi(t):  return satir(t, "dim")
 def uyari(t):  return satir(t, "warn")
 def vurgu(t):  return satir(t, "hi")
+
+
+def alan(etiket: str, deger, cls: str = "") -> dict:
+    """İki sütunlu alan.
+
+    Yetenek boşlukla hizalama YAPMAZ. `f"{etiket:<22}"` biçiminde bir çıktı,
+    gösterim kararını yeteneğin içine kaçırır (Değişmez 6) ve kabuğu bir
+    terminal dökümüne mahkûm eder. Hizayı ve düzeni kabuk kurar.
+    """
+    return {"etiket": etiket, "deger": "" if deger is None else str(deger), "cls": cls}
+
+
+def baslik(t: str) -> dict:
+    """Panel içi bölüm başlığı."""
+    return {"baslik": t}
+
+
+def bosluk() -> dict:
+    return {"bosluk": True}
