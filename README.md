@@ -34,6 +34,7 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `istatistik` | R ortalaması, win rate, setup dağılımı |
 | `eksik` | sonuçlanmamış ve zorunlu alanı boş kayıtlar |
 | `bildirimler` | bekleyen bildirimler ve günlük bütçe durumu |
+| `seans` | killzone saatleri ve şu an açık olan seans |
 | `log [adet]` | son olaylar |
 | `temizle` | ekranı boşalt (kabukta çalışır, çekirdeğe gitmez) |
 
@@ -49,6 +50,7 @@ core/
   niyet.py        serbest cümle → yetenek eşlemesi (Faz 3)
   model.py        görev başına model seçimi
   bildirim.py     bildirim seviyeleri + günlük bütçe
+  zamanlayici.py  periyodik kontrol çalıştırıcısı
   router.py       yönlendirme, risk kapısı, onay akışı
   log.py          jsonl olay günlüğü
   server.py       fastapi + websocket + kabuk servisi

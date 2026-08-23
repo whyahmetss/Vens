@@ -45,7 +45,7 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 
 ## Faz 6 — trading taraması
 
-- [ ] Seans / killzone hatırlatıcı
+- [x] Seans / killzone hatırlatıcı *(sinyal değil, hatırlatma)*
 - [ ] Seviye yaklaşma uyarısı
 - [ ] HTF bias notu *(bilgi, öneri değil)*
 

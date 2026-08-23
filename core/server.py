@@ -7,20 +7,31 @@ Sunucu yalnızca 127.0.0.1'e bağlanır — dışarı açık değildir.
 
 from __future__ import annotations
 import asyncio, json, uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 
 from . import log
-from . import bildirim
+from . import bildirim, zamanlayici
 from .router import yonlendir
 from .registry import hepsi
 
 UI = Path(__file__).resolve().parent.parent / "ui" / "index.html"
 
 
-app = FastAPI(title="VENÜS")
+@asynccontextmanager
+async def _omur(app: FastAPI):
+    # Periyodik kontroller ancak olay döngüsü varken başlatılabilir. Yetenekler
+    # bu noktada yüklenmiş olur, yani @periyodik kayıtları tamamdır.
+    adet = zamanlayici.baslat()
+    log.yaz("baslangic", kontrol=adet)
+    yield
+    zamanlayici.durdur()
+
+
+app = FastAPI(title="VENÜS", lifespan=_omur)
 
 
 @app.get("/")
