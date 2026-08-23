@@ -36,6 +36,7 @@
   /* --- üst ray: minimal (Bölüm 13) --- */
   .rail{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;
         border-bottom:1px solid var(--rule);padding-bottom:12px}
+  .rail .meta{justify-self:end}
   .mark{display:flex;align-items:baseline;gap:10px}
   .mark h1{font-family:'VT323',monospace;font-size:34px;letter-spacing:.14em;
            font-weight:400;color:var(--ink);line-height:1}
@@ -79,7 +80,90 @@
   .foot{display:flex;justify-content:space-between;align-items:center;
         font-size:10px;letter-spacing:.16em;color:var(--gray);text-transform:uppercase}
 
+  /* --- Venüs çekirdeği (Bölüm 13: varsayılan durumun bir parçası) ---
+     Dekor değil gösterge: boşta sakin döner, komut işlenirken hızlanır,
+     kritik bildirimde turuncuya döner, bağlantı düşünce durur. */
+  .cekirdek{width:78px;height:78px;flex-shrink:0;position:relative}
+  .cekirdek svg{width:100%;height:100%;overflow:visible}
+  .cekirdek .chizgi{fill:none;stroke:var(--neon);vector-effect:non-scaling-stroke}
+  .cekirdek .tik{stroke:var(--neon);opacity:.30;stroke-width:1}
+  .cekirdek .yay{stroke-width:1.4;opacity:.85;stroke-dasharray:34 120;
+                 stroke-linecap:round;transform-origin:60px 60px;
+                 animation:don 9s linear infinite}
+  .cekirdek .cember{stroke-width:1;opacity:.18}
+  .cekirdek .yorunge{stroke-width:1;opacity:.42;transform-origin:60px 60px;
+                     animation:don 22s linear infinite reverse}
+  .cekirdek .kure{transform-origin:60px 60px;transform:rotate(-12deg)}
+  .cekirdek .enlem{stroke-width:.9;opacity:.34}
+  .cekirdek .cevre{stroke-width:1.1;opacity:.55}
+  /* Boylamların yatay ölçeği daralıp genişleyince küre dönüyormuş gibi okunur. */
+  .cekirdek .boylam{stroke-width:.9;opacity:.5;transform-origin:60px 60px;
+                    animation:boylam 7s ease-in-out infinite}
+  .cekirdek .boylam:nth-of-type(2){animation-delay:-2.33s}
+  .cekirdek .boylam:nth-of-type(3){animation-delay:-4.66s}
+  .cekirdek .oz{fill:var(--neon);stroke:none;
+                filter:drop-shadow(0 0 6px var(--neon));animation:nefes 3.4s ease-in-out infinite}
+  .cekirdek .hale{fill:var(--neon);stroke:none;
+                  animation:hale 3.4s ease-in-out infinite}
+
+  @keyframes don{to{transform:rotate(360deg)}}
+  @keyframes boylam{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.04)}}
+  @keyframes nefes{0%,100%{opacity:1}50%{opacity:.45}}
+  @keyframes hale{0%,100%{opacity:.10}50%{opacity:.035}}
+
+  /* meşgul: çekirdek hızlanır ve parlar — Venüs düşünüyor demektir */
+  .cekirdek.mesgul .yay{animation-duration:1.5s;opacity:1;stroke-width:2}
+  .cekirdek.mesgul .boylam{animation-duration:2.2s;opacity:.8}
+  .cekirdek.mesgul .yorunge{animation-duration:6s;opacity:.7}
+  .cekirdek.mesgul .oz{animation-duration:1s}
+  .cekirdek.mesgul .hale{animation-duration:1s}
+  /* uyarı: kritik bildirim rengi devralır */
+  .cekirdek.uyari .chizgi{stroke:var(--warn)}
+  .cekirdek.uyari .oz,.cekirdek.uyari .hale{fill:var(--warn)}
+  .cekirdek.uyari .oz{filter:drop-shadow(0 0 10px var(--warn));animation-duration:.7s}
+  .cekirdek.uyari .tik{stroke:var(--warn)}
+  /* bağlantı yok: hareket durur, renk çekilir */
+  .cekirdek.kapali{filter:grayscale(1);opacity:.34}
+  .cekirdek.kapali *{animation-play-state:paused!important}
+
+  /* açılış: çekirdek hızlı dönerek yerine oturur (Bölüm 13, sinematik açılış) */
+  .cekirdek.uyaniyor{animation:cekirdekAcil 1.7s cubic-bezier(.16,.86,.24,1) both}
+  .cekirdek.uyaniyor .yay{animation-duration:.85s}
+  .cekirdek.uyaniyor .yorunge{animation-duration:2.4s}
+  .cekirdek.uyaniyor .boylam{animation-duration:1.4s}
+  @keyframes cekirdekAcil{
+    from{opacity:0;transform:scale(.5) rotate(-120deg)}
+    60%{opacity:1}
+    to{opacity:1;transform:none}
+  }
+
+  /* --- HUD çerçevesi: köşe ayraçları --- */
+  .shell{position:relative}
+  .kose{position:absolute;width:14px;height:14px;border:1px solid var(--neon);
+        opacity:.30;pointer-events:none}
+  .kose.su{top:6px;left:6px;border-right:0;border-bottom:0}
+  .kose.sag-u{top:6px;right:6px;border-left:0;border-bottom:0}
+  .kose.sa{bottom:6px;left:6px;border-right:0;border-top:0}
+  .kose.sag-a{bottom:6px;right:6px;border-left:0;border-top:0}
+
+  /* --- cam paneller --- */
+  .rail,.foot{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0));
+              backdrop-filter:blur(6px);border:1px solid var(--rule);border-radius:3px;
+              padding:12px 14px}
+  .rail{border-bottom:1px solid var(--rule)}
+
+  /* --- yumuşak geçişler: satırlar belirir, çakmaz --- */
+  .row{animation:gir .2s ease-out both}
+  @keyframes gir{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+  /* --- tarama süpürmesi: çok yavaş, çok sönük --- */
+  .veil .tarama{position:absolute;left:0;right:0;height:220px;
+    background:linear-gradient(180deg,transparent,rgba(0,255,65,.016),transparent);
+    animation:supur 14s linear infinite}
+  @keyframes supur{from{transform:translateY(-240px)}to{transform:translateY(100vh)}}
+
   @media (max-width:640px){
+    .cekirdek{width:52px;height:52px}
     .rail{grid-template-columns:1fr;gap:10px}
     .meta{justify-content:flex-start;text-align:left;gap:18px}
     .mark h1{font-size:28px}
@@ -87,24 +171,46 @@
   }
   @media (prefers-reduced-motion:reduce){
     *{animation:none!important;transition:none!important}
-    .veil::before{display:none}
+    .veil::before,.veil .tarama{display:none}
+    /* Hareket kapalıyken küre düz durmalı, yassı değil (Bölüm 13 erişilebilirlik). */
+    .cekirdek .boylam{transform:none}
   }
 </style>
 </head>
 <body>
-<div class="veil"></div>
+<div class="veil"><div class="tarama"></div></div>
 
 <div class="shell">
+  <span class="kose su"></span><span class="kose sag-u"></span>
+  <span class="kose sa"></span><span class="kose sag-a"></span>
+
   <header class="rail">
     <div class="mark">
       <h1>VENÜS</h1>
       <span class="state" id="state"><span class="pip"></span>çevrimdışı</span>
     </div>
-    <div></div>
     <div class="meta">
       <div class="cell"><div class="k">oturum</div><div class="v" id="up">00:00:00</div></div>
       <div class="cell"><div class="k">tarih</div><div class="v" id="date">—</div></div>
       <div class="cell"><div class="k">saat</div><div class="v stamp" id="clock">--:--</div></div>
+    </div>
+    <div class="cekirdek kapali" id="cekirdek" role="img" aria-label="Venüs çekirdeği">
+      <svg viewBox="0 0 120 120">
+        <g class="tik" id="tikler"></g>
+        <circle class="chizgi cember" cx="60" cy="60" r="54"/>
+        <circle class="chizgi yay"    cx="60" cy="60" r="54"/>
+        <ellipse class="chizgi yorunge" cx="60" cy="60" rx="56" ry="19"/>
+        <circle class="hale" cx="60" cy="60" r="34"/>
+        <g class="kure">
+          <circle  class="chizgi cevre"  cx="60" cy="60" r="34"/>
+          <ellipse class="chizgi enlem"  cx="60" cy="60" rx="34" ry="11.5"/>
+          <ellipse class="chizgi enlem"  cx="60" cy="60" rx="34" ry="24"/>
+          <ellipse class="chizgi boylam" cx="60" cy="60" rx="34" ry="34"/>
+          <ellipse class="chizgi boylam" cx="60" cy="60" rx="34" ry="34"/>
+          <ellipse class="chizgi boylam" cx="60" cy="60" rx="34" ry="34"/>
+        </g>
+        <circle class="oz" cx="60" cy="60" r="3.6"/>
+      </svg>
     </div>
   </header>
 
@@ -128,6 +234,35 @@ const line  = document.getElementById('line');
 const boot  = Date.now();
 
 const pad = n => String(n).padStart(2,'0');
+
+/* --- Venüs çekirdeği ---------------------------------------------------
+   Gösterge olarak davranır: ne olduğunu söyler, süs olmaz. */
+const cekirdek = document.getElementById('cekirdek');
+
+(function tikleriCiz(){
+  const g = document.getElementById('tikler');
+  const NS = 'http://www.w3.org/2000/svg';
+  for(let i = 0; i < 36; i++){
+    const a = i * Math.PI / 18;
+    const uzun = i % 3 === 0;                       // her 30°'de daha uzun çentik
+    const [d1, d2] = uzun ? [58, 66] : [61, 65];
+    const l = document.createElementNS(NS, 'line');
+    l.setAttribute('x1', 60 + Math.cos(a)*d1); l.setAttribute('y1', 60 + Math.sin(a)*d1);
+    l.setAttribute('x2', 60 + Math.cos(a)*d2); l.setAttribute('y2', 60 + Math.sin(a)*d2);
+    if(uzun) l.setAttribute('opacity', .8);
+    g.appendChild(l);
+  }
+})();
+
+let uyariZaman = null;
+function cekirdekDurum(ad, acik){
+  cekirdek.classList.toggle(ad, acik);
+}
+function cekirdekUyar(){
+  cekirdekDurum('uyari', true);
+  clearTimeout(uyariZaman);
+  uyariZaman = setTimeout(()=>cekirdekDurum('uyari', false), 5000);
+}
 
 function say(text, cls=''){
   const el = document.createElement('div');
@@ -164,6 +299,7 @@ setInterval(()=>{
 function durum(on){
   document.getElementById('state').innerHTML =
     `<span class="pip${on?'':' off'}"></span>${on ? 'çevrimiçi' : 'bağlanıyor'}`;
+  cekirdekDurum('kapali', !on);
 }
 
 /* --- çekirdek köprüsü --- */
@@ -202,6 +338,7 @@ const bekleyenBildirim = [];
 function bildirimGoster(m){
   if(!acilisBitti){ bekleyenBildirim.push(m); return; }
   say(`${m.saat}  ${m.text}`, 'bildirim ' + m.seviye);
+  if(m.seviye === 'kritik') cekirdekUyar();
 }
 
 /* --- girdi --- */
@@ -226,6 +363,7 @@ function gonder(raw){
    donmuş görünmemeli. Kabuk ne beklediğini bilmez, sadece beklediğini bilir. */
 let beklerSatir = null;
 function bekletme(acik){
+  cekirdekDurum('mesgul', acik);
   if(acik){
     if(!beklerSatir) beklerSatir = say('…', 'dim');
   } else if(beklerSatir){
@@ -241,12 +379,14 @@ flow.addEventListener('click', ()=>line.focus());
 
 /* --- uyanış --- */
 async function uyan(){
+  cekirdekDurum('uyaniyor', true);
   await typeOut('çekirdek başlatılıyor', 'dim', 22);
   await pause(160);
   for(const p of ['yetenek kayıt defteri','olay günlüğü','köprü']){
     say(`  ${p}`, 'dim'); await pause(110);
   }
   await pause(260);
+  cekirdekDurum('uyaniyor', false);
   say('VENÜS <b>hazır</b>', 'wake');
   acilisBitti = true;
   while(bekleyenBildirim.length) bildirimGoster(bekleyenBildirim.shift());
