@@ -31,10 +31,12 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 
 ## Faz 4 — ses
 
-- [ ] Konuşmadan metne
-- [ ] Metinden konuşmaya
-- [ ] Uyandırma kelimesi (lokal)
-- [ ] Sembol düzeltme katmanı (BTC → "bitisi" sorunu)
+- [x] Konuşmadan metne — bas-konuş (tarayıcı)
+- [x] Metinden konuşmaya — tarayıcıda yerel, KRİTİK/YÜKSEK bildirimler
+- [ ] Uyandırma kelimesi (lokal) — **yapılmadı:** tarayıcı tanıması sesi buluta
+      yollar, sürekli açık bırakmak Bölüm 8'i çiğner. Lokal bir uyandırma
+      motoru (openWakeWord vb.) gerekir — yeni bağımlılık, kullanıcı kararı.
+- [x] Sembol düzeltme katmanı (BTC → "bitisi" sorunu)
 
 ## Faz 5 — arayüz
 

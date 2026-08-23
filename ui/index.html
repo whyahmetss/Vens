@@ -74,6 +74,14 @@
      açılış sekansı boyunca yazılabilir kalıyor ve çıktı animasyona karışıyordu. */
   .ask[hidden]{display:none}
   .ask .sig{color:var(--neon);flex-shrink:0}
+  .mik{flex-shrink:0;width:26px;height:26px;border:1px solid var(--rule);border-radius:50%;
+       background:none;color:var(--gray);cursor:pointer;font:inherit;font-size:12px;
+       display:grid;place-items:center;transition:color .15s,border-color .15s}
+  .mik:hover{color:var(--ink);border-color:var(--neon)}
+  .mik[hidden]{display:none}
+  .mik.dinliyor{color:var(--warn);border-color:var(--warn);
+                animation:nefes 1.1s ease-in-out infinite}
+  .mik.sesli{color:var(--neon);border-color:rgba(0,255,65,.5)}
   #line{flex:1;background:none;border:0;outline:none;color:var(--ink);
         font:inherit;caret-color:var(--neon)}
 
@@ -253,6 +261,9 @@
     <div class="ask" id="ask" hidden>
       <span class="sig">&gt;</span>
       <input id="line" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="komut">
+      <button class="mik" id="hoparlor" type="button" title="sesli yanıt">♪</button>
+      <button class="mik" id="mikrofon" type="button" hidden
+              title="bas ve konuş (boşluk tuşu)">●</button>
     </div>
   </main>
 
@@ -399,6 +410,7 @@ function bildirimGoster(m){
   if(!acilisBitti){ bekleyenBildirim.push(m); return; }
   say(`${m.saat}  ${m.text}`, 'bildirim ' + m.seviye);
   if(m.seviye === 'kritik') cekirdekUyar();
+  if(m.seviye === 'kritik' || m.seviye === 'yuksek') seslendir(m.text);
 }
 
 /* --- yanıt paneli ---------------------------------------------------
@@ -426,7 +438,7 @@ function paneliKapat(){
 
 /* --- girdi --- */
 const gecmis = []; let gi = -1;
-function gonder(raw){
+function gonder(raw, ses=false){
   const t = raw.trim();
   if(!t) return;
   gecmis.push(t); gi = gecmis.length;
@@ -435,8 +447,8 @@ function gonder(raw){
     return;
   }
   if(sock && sock.readyState === WebSocket.OPEN){
-    paneliAc(t);
-    sock.send(JSON.stringify({cmd: t}));
+    paneliAc(ses ? '♪ ' + t : t);
+    sock.send(JSON.stringify({cmd: t, ses}));
     bekletme(true);
   }
   else say('çekirdek kapalı — run.py çalışmıyor.', 'warn');
@@ -461,6 +473,88 @@ line.addEventListener('keydown', e=>{
   else if(e.key === 'ArrowDown'){ gi = Math.min(gi+1, gecmis.length); line.value = gecmis[gi] || ''; }
 });
 flow.addEventListener('click', ()=>line.focus());
+
+/* --- ses (Faz 4) ---------------------------------------------------
+   Şartname Bölüm 8: ses bir GİRİŞ YÖNTEMİDİR, yetenek değildir. Sistemin
+   ne yapabildiğini değiştirmez — aynı kapalı yetenek listesine gider.
+
+   Uyandırma kelimesi BİLEREK yok. Bölüm 8: "Sürekli açık mikrofon + her
+   cümleyi buluta yollama = pil ve fatura. Uyandırma kelimesi lokal
+   çalışmalıdır." Tarayıcının konuşma tanıması sesi Google'a gönderir;
+   sürekli açık bırakmak o maddeyi çiğnemek olurdu. Onun yerine bas-konuş:
+   mikrofon yalnızca sen bastığın sürece açık.
+
+   Sembol düzeltmesi burada yapılmaz — çekirdekte, deterministik olarak
+   (core/sembol.py). Kabuk yalnızca "bu ses" bilgisini iletir. */
+const mikrofon = document.getElementById('mikrofon');
+const hoparlor = document.getElementById('hoparlor');
+const Taniyici = window.SpeechRecognition || window.webkitSpeechRecognition;
+let taniyici = null, dinliyor = false;
+
+if(Taniyici){
+  mikrofon.hidden = false;
+  taniyici = new Taniyici();
+  taniyici.lang = 'tr-TR';
+  taniyici.interimResults = false;
+  taniyici.maxAlternatives = 1;
+  taniyici.onresult = e=>{
+    const metin = e.results[0][0].transcript.trim();
+    if(metin) gonder(metin, true);
+  };
+  taniyici.onerror = e=>{
+    if(e.error !== 'aborted' && e.error !== 'no-speech')
+      say(`mikrofon: ${e.error}`, 'warn');
+  };
+  taniyici.onend = ()=>{ dinliyor = false; mikrofon.classList.remove('dinliyor'); };
+}
+
+function dinlemeyiAc(){
+  if(!taniyici || dinliyor) return;
+  dinliyor = true;
+  mikrofon.classList.add('dinliyor');
+  try{ taniyici.start(); }
+  catch(_){ dinliyor = false; mikrofon.classList.remove('dinliyor'); }
+}
+function dinlemeyiKapat(){ if(taniyici && dinliyor) taniyici.stop(); }
+
+mikrofon.addEventListener('mousedown', dinlemeyiAc);
+mikrofon.addEventListener('mouseup', dinlemeyiKapat);
+mikrofon.addEventListener('mouseleave', dinlemeyiKapat);
+mikrofon.addEventListener('touchstart', e=>{ e.preventDefault(); dinlemeyiAc(); });
+mikrofon.addEventListener('touchend', e=>{ e.preventDefault(); dinlemeyiKapat(); });
+
+/* Boşluk tuşu: girdi kutusu boşken bas-konuş. Yazarken araya girmez. */
+addEventListener('keydown', e=>{
+  if(e.code === 'Space' && !e.repeat && document.activeElement === line && !line.value){
+    e.preventDefault(); dinlemeyiAc();
+  }
+});
+addEventListener('keyup', e=>{ if(e.code === 'Space') dinlemeyiKapat(); });
+
+/* Sesli yanıt: tarayıcıda yerel çalışır, buluta ses gitmez.
+   Bölüm 12: KRİTİK ve YÜKSEK seslidir, NORMAL sessiz rozettir — komut
+   çıktısı okunmaz, "komut okuyucu gibi" olmasın (Bölüm 8). */
+let sesliYanit = localStorage.getItem('venus-ses') === '1';
+function hoparlorTazele(){
+  hoparlor.classList.toggle('sesli', sesliYanit);
+  hoparlor.title = sesliYanit ? 'sesli yanıt açık' : 'sesli yanıt kapalı';
+}
+hoparlor.addEventListener('click', ()=>{
+  sesliYanit = !sesliYanit;
+  try{ localStorage.setItem('venus-ses', sesliYanit ? '1' : '0'); }catch(_){}
+  hoparlorTazele();
+  if(sesliYanit) seslendir('sesli yanıt açık');
+});
+hoparlorTazele();
+
+function seslendir(metin){
+  if(!sesliYanit || !window.speechSynthesis) return;
+  const s = new SpeechSynthesisUtterance(metin);
+  s.lang = 'tr-TR';
+  s.rate = 1.02;           // komut okuyucu temposu değil, konuşma temposu
+  s.pitch = .95;
+  speechSynthesis.speak(s);
+}
 
 /* --- uyanış --- */
 async function uyan(){

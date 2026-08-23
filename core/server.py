@@ -83,7 +83,8 @@ async def ws(sock: WebSocket):
         while True:
             mesaj = json.loads(await sock.receive_text())
             girdi = mesaj.get("cmd", "")
-            for satir in await yonlendir(girdi, oturum):
+            kaynak = "ses" if mesaj.get("ses") else "klavye"
+            for satir in await yonlendir(girdi, oturum, kaynak):
                 await sock.send_text(json.dumps(satir))
                 await asyncio.sleep(0.015)
             await sock.send_text(json.dumps({"bitti": True,

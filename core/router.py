@@ -8,7 +8,7 @@ Hangi yetenek, hangi parametre, izin var mı, onay gerekir mi.
 from __future__ import annotations
 import inspect, time
 
-from . import log, niyet
+from . import log, niyet, sembol
 from .registry import Risk, bul, satir, uyari, bilgi
 
 # Bekleyen onaylar: oturum -> (yetenek, argüman)
@@ -22,10 +22,23 @@ async def _cagir(s, arg: str):
     return sonuc or []
 
 
-async def yonlendir(girdi: str, oturum: str = "yerel") -> list[dict]:
+async def yonlendir(girdi: str, oturum: str = "yerel",
+                    kaynak: str = "klavye") -> list[dict]:
     girdi = girdi.strip()
     if not girdi:
         return []
+
+    # Sembol düzeltmesi YALNIZCA sesten gelene uygulanır (Bölüm 8). Klavyeden
+    # "bitisi" yazan kullanıcı onu kastetmiştir.
+    onek: list[dict] = []
+    if kaynak == "ses":
+        yeni_girdi, degisiklikler = sembol.duzelt(girdi)
+        if degisiklikler:
+            log.yaz("ses", olay="sembol_duzeltildi", ham=girdi,
+                    duzeltilmis=yeni_girdi, degisiklik=degisiklikler)
+            onek.append(bilgi("duydum: " + ", ".join(
+                f"{a} → {b}" for a, b in degisiklikler)))
+            girdi = yeni_girdi
 
     # --- bekleyen onay var mı? ---
     if oturum in _BEKLEYEN:
@@ -40,9 +53,9 @@ async def yonlendir(girdi: str, oturum: str = "yerel") -> list[dict]:
     s = bul(komut)
 
     if s is None:
-        return await _niyet_yolu(girdi, komut, oturum)
+        return onek + await _niyet_yolu(girdi, komut, oturum)
 
-    return await _risk_kapisi(s, arg, oturum)
+    return onek + await _risk_kapisi(s, arg, oturum)
 
 
 async def _risk_kapisi(s, arg: str, oturum: str) -> list[dict]:

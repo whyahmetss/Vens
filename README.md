@@ -51,6 +51,7 @@ core/
   model.py        görev başına model seçimi
   bildirim.py     bildirim seviyeleri + günlük bütçe
   zamanlayici.py  periyodik kontrol çalıştırıcısı
+  sembol.py       konuşma tanıma sembol düzeltmesi
   router.py       yönlendirme, risk kapısı, onay akışı
   log.py          jsonl olay günlüğü
   server.py       fastapi + websocket + kabuk servisi
