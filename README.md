@@ -35,6 +35,8 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `tamamla <id> alan=değer` | açık pozisyonu kapat ya da kaydı düzelt |
 | `istatistik` | R ortalaması, win rate, setup dağılımı |
 | `analiz [görünüm]` | setup/seans/sembol/RR kırılımı, tekrarlanan davranışlar |
+| `review [id]` | plan ile gerçeğin karşılaştırması |
+| `koc` | tekrarlanan davranışları yüzüne tutar |
 | `eksik` | sonuçlanmamış ve zorunlu alanı boş kayıtlar |
 | `bildirimler` | bekleyen bildirimler ve günlük bütçe durumu |
 | `seans` | killzone saatleri ve şu an açık olan seans |
@@ -60,6 +62,8 @@ core/
   playbook.py     setup tanımları + kontrol listeleri
   karne.py        uyum karnesi ve kalite skoru
   analiz.py       kırılımlar + tekrarlanan davranış analizi
+  review.py       plan ↔ gerçek karşılaştırması
+  koc.py          sabit şablonlu sorgulama (LLM yok)
   jurnal.py       işlem kaydı biçimi + jsonl depo
   niyet.py        serbest cümle → yetenek eşlemesi (Faz 3)
   model.py        görev başına model seçimi
@@ -183,6 +187,48 @@ toplamıdır.
 
 **Az örnek istatistik değildir.** 5 işlemin altındaki gruplar gösterilir ama
 "en iyi / en kötü" sıralamasına girmez.
+
+## Review ve koç
+
+`review <id>` girişte söylediğinle sonra olanı yan yana koyar:
+
+```
+PLAN (girişte söylediğin)
+  giriş sebebi   OTE 0.705
+  htf            haftalık BOS
+GERÇEK (sonra olan)
+  sonradan not   htf: aslında range içindeydi
+KARŞILAŞTIRMA
+  plan       hedef 3R, sonuç +0.60R — planın %20'inde kapattın
+  kontrol    2/4 madde işaretsizdi: fvg, ote
+  sonradan   1 işlem sonrası not var — girişte söylemediğin bir şeyi
+             sonradan eklemek istemişsin
+```
+
+`koc` istatistiği soru olarak önüne koyar:
+
+```
+fomo  (senin etiketin)
+  son 42 işleminde 9 kez görüldü
+  9 zarar / 0 kâr
+  toplam etki -8.0R
+  aynı işlemler şu adlarla da görünüyor: maks_risk_yuzde, izinli_seanslar, seans: asya
+  Bu davranışı sürdürmek için istatistiksel gerekçen nedir?
+```
+
+**Şablonlar sabittir ve `core/koc.py`'de görünür — LLM kullanılmaz.** Sebep
+Bölüm 10'daki gerekçenin aynısı: modelin ürettiği ikna edici bir cümle, logdan
+senin kendi çıkarımından ayırt edilemez. Koç seni ikna etmez, sayıyı önüne koyar.
+
+Kural: **koç asla "şunu yap" demez.** Her şablon bir soruyla ya da çıplak bir
+sayıyla biter. Yeni şablon eklerken bu doğrulanmalı.
+
+Örtüşen bulgular teke iner: aynı 9 kötü işlem "fomo", "risk aşımı", "izinsiz
+seans" ve "min_rr" olarak dört kez sorulursa tek problem dört sorun gibi görünür.
+
+Eşikler gürültüyü keser — 4 tekrardan az, 5 işlemden küçük grup ya da 1R'den
+düşük etki bulgu sayılmaz. Az örneğe dayanarak birini sorguya çekmek, onu
+gürültüye göre davranmaya iter.
 
 ## Geçmiş yeniden yazılamaz
 

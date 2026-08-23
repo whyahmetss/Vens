@@ -25,7 +25,7 @@ async def main():
                 'jurnal sembol=XAUUSD yon=long seans=londra risk=1 hedef_r=3 sonuc_r=2.4 '
                 'setup="sweep → MSS → FVG" giris_sebebi="OTE 0.705" duygu=sakin',
                 "kayitlar", "tamamla", "ihlaller", "istatistik", "eksik",
-                "bildirimler", "seans", "seviyeler", "bias", "merkez", "analiz", "beyazliste", "izinler", "playbook",
+                "bildirimler", "seans", "seviyeler", "bias", "merkez", "analiz", "review", "koc", "beyazliste", "izinler", "playbook",
                 "log 5", "zirva"]:
         out = await yonlendir(cmd, "smoke")
         print(f"\n$ {cmd}")

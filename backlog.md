@@ -76,9 +76,8 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 - [x] Geçmiş yeniden yazılamaz — ORIGINAL / POST-TRADE NOTE ayrımı
 - [x] **Analytics** — setup × seans × sembol × RR kırılımı, kalite skoru →
       sonuç korelasyonu, tekrarlanan davranışlar ve birleşik R etkisi
-- [ ] **Review** — giriş gerekçesi ile çıkış gerekçesinin karşılaştırılması
-- [ ] **Coach** — istatistiği soru olarak yüzüne tutma, tavsiye vermeden
-      *(Değişmez 4'e en yakın duran yer — yazılırken sınır ayrıca gözden geçirilmeli)*
+- [x] **Review** — plan ↔ gerçek karşılaştırması, sonradan eklenen gerekçe tespiti
+- [x] **Coach** — sabit şablonlu sorgulama, LLM yok *(kullanıcı kararı)*
 
 ## Fikirler *(sıralanmamış, faz atanmamış)*
 
