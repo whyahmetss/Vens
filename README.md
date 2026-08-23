@@ -25,6 +25,18 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `sistem` | cpu / bellek / disk |
 | `not <metin>` | hızlı not |
 | `notlar [adet]` | son notlar |
+| `profil` | Venüs'ün senin hakkında bildikleri |
+| `profil-ekle <ad> <değer>` | profile kendi beyanını ekle |
+| `profil-unut <id>` | profildeki beyanı sil |
+| `odak [konu]` | odak seansı başlat / durumu gör |
+| `bitir [not]` | açık odak seansını kapat |
+| `odaklar [adet]` | son odak seansları |
+| `proje [ad]` | aktif proje ve nerede kaldığın |
+| `projeler` | tüm projeler |
+| `sonraki <metin>` | aktif projede sonraki adım |
+| `proje-durum <durum>` | projenin durumunu değiştir |
+| `gunaydin` | sabah brifingi |
+| `kapanis` | gün kapanışı |
 | `fiyat <sembol>` | canlı spot fiyat (`fiyat BTC`) |
 | `kurallar` | aktif kuralları ve kural dosyasındaki sorunları göster |
 | `playbook [setup]` | setup tanımları ve kontrol listeleri |
@@ -64,6 +76,9 @@ core/
   analiz.py       kırılımlar + tekrarlanan davranış analizi
   review.py       plan ↔ gerçek karşılaştırması
   koc.py          sabit şablonlu sorgulama (LLM yok)
+  profil.py       kalıcı profil (Bölüm 7, Aşama 3)
+  odak.py         çalışma seansları
+  proje.py        projeler alanı
   jurnal.py       işlem kaydı biçimi + jsonl depo
   niyet.py        serbest cümle → yetenek eşlemesi (Faz 3)
   model.py        görev başına model seçimi
@@ -151,6 +166,31 @@ bir değer yok sayılır ve `playbook` uyarır.
 
 **Venüs grafiği göremez.** "liquidity_sweep ✓" onun doğrulaması değil, senin
 beyanın. Değeri şuradan gelir: beyanı sonucu bilmeden verirsin ve kilitlenir.
+
+## Çalışma ortamı
+
+Venüs yalnızca trading aracı değil (Bölüm 0). Trading disiplin motorunun aynısı
+zamana ve işlerine de uygulanır.
+
+**Profil — Venüs'ün seni tanıması.** Bölüm 7, Aşama 3'ün şartı: *her kayıt
+görülebilir, düzenlenebilir, silinebilir; gizli hafıza yok.* Bu yüzden
+çıkarımlar saklanmaz, her seferinde yeniden hesaplanır ve yanında nereden
+çıktığı yazar. Katılmadığın bir çıkarımı `profil gizle <ad>` ile susturursun.
+Modele "bu kullanıcı nasıl biri" sorulmaz — yalnızca sayılabilir şeyler.
+
+**Odak seansları.** `odak <konu>` başlatır, `bitir` kapatır. Hatırlatmalar
+`kurallar.yaml`'ın `calisma` bölümünden gelir: günlük odak saati, gece çalışma
+uyarısı, seans üst sınırı, günlük hedef. Boş bırakılan alan denetlenmez.
+
+**Projeler.** `proje <ad>` aktif projeyi seçer, `sonraki <metin>` bıraktığın
+yeri yazar. Ertesi gün `proje` yazınca o satır önüne gelir — Bölüm 0'ın
+"kullanıcı bir uygulama açmaz, Venüs'ü uyandırır" hedefini gerçek yapan şey bu.
+Odak seansları aktif projeye kendiliğinden bağlanır.
+
+**Brifing ve kapanış.** `gunaydin` günü açar (nerede kaldın, bugünün
+killzone'ları, açık işler), `kapanis` kapatır (kaç işlem, net R, odak süresi,
+yarına kalanlar). Saatleri gelince NORMAL bildirim düşer — sessiz rozet, ekran
+bölme. Brifing bir hatırlatmadır, kesinti değil.
 
 ## Analiz
 

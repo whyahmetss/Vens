@@ -26,6 +26,7 @@ async def main():
                 'setup="sweep → MSS → FVG" giris_sebebi="OTE 0.705" duygu=sakin',
                 "kayitlar", "tamamla", "ihlaller", "istatistik", "eksik",
                 "bildirimler", "seans", "seviyeler", "bias", "merkez", "analiz", "review", "koc", "beyazliste", "izinler", "playbook",
+                "profil", "odaklar", "projeler", "gunaydin", "kapanis",
                 "log 5", "zirva"]:
         out = await yonlendir(cmd, "smoke")
         print(f"\n$ {cmd}")

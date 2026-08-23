@@ -58,8 +58,25 @@ trading:
   kayip_sonrasi_bekleme_dk: 30
 
 calisma:
-  # Bu iki alanın henüz dedektörü yok — Faz 5'teki bildirim bütçesi ve
-  # hatırlatıcılar gelince kullanılacak. Şimdiden değer yazmak, hiçbir şey
-  # yapmayan bir ayar bırakmak olur; o yüzden boş.
-  gunluk_odak_saati: null
-  gece_calisma_uyarisi_saat: null
+  # Trading disiplininin aynısı, bu sefer zamanına uygulanıyor.
+  # Boş bırakılan (null) her alan sessizce denetlenmez.
+
+  # Bu saatte hâlâ odak seansı başlatmadıysan Venüs sessiz bir rozetle
+  # hatırlatır. Zorlamaz — hatırlatır ve çekilir.
+  gunluk_odak_saati: "09:30"
+
+  # Bu saatten sonra hâlâ açık bir odak seansın varsa uyarır. Gece çalışması
+  # yasak değil; fark edilmeden sürmesi sorun.
+  gece_calisma_uyarisi_saat: "01:00"
+
+  # Tek bir odak seansının makul üst sınırı. Aşınca bir kez haber verir —
+  # üç saat aralıksız çalışmak odak değil, tükenmedir.
+  odak_sure_dk: 90
+
+  # Günlük odak hedefin (dakika). Kapanışta ne kadarını tutturduğun yazılır.
+  gunluk_odak_hedefi_dk: 180
+
+  # Sabah brifingi ve gün kapanışı saatleri. null ise kendiliğinden gelmez,
+  # yalnızca `gunaydin` / `kapanis` yazınca çalışır.
+  brifing_saati: "08:30"
+  kapanis_saati: "22:00"

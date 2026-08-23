@@ -23,7 +23,13 @@ def yaz(tur: str, **veri) -> None:
         f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
 
 
+def hepsi(tur: str | None = None) -> list[dict]:
+    """Tüm olaylar. Profil çıkarımı bunun üstünden yapılır."""
+    return oku(0, tur)
+
+
 def oku(n: int = 50, tur: str | None = None) -> list[dict]:
+    """Son n olay. n<=0 ise hepsi."""
     if not OLAYLAR.exists():
         return []
     kayitlar = []
@@ -38,4 +44,4 @@ def oku(n: int = 50, tur: str | None = None) -> list[dict]:
                 continue
             if tur is None or k.get("tur") == tur:
                 kayitlar.append(k)
-    return kayitlar[-n:]
+    return kayitlar if n <= 0 else kayitlar[-n:]

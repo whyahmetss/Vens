@@ -150,6 +150,10 @@ SEMA = {
     "calisma": {
         "gunluk_odak_saati":         _saat,
         "gece_calisma_uyarisi_saat": _saat,
+        "odak_sure_dk":              lambda d: _tam_sayi(d, en_az=5),
+        "gunluk_odak_hedefi_dk":     lambda d: _tam_sayi(d, en_az=0),
+        "brifing_saati":             _saat,
+        "kapanis_saati":             _saat,
     },
 }
 

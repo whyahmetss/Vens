@@ -79,6 +79,15 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 - [x] **Review** — plan ↔ gerçek karşılaştırması, sonradan eklenen gerekçe tespiti
 - [x] **Coach** — sabit şablonlu sorgulama, LLM yok *(kullanıcı kararı)*
 
+## Çalışma ortamı *(şartname Bölüm 0 ve 7)*
+
+- [x] Kalıcı profil — hafıza Aşama 3, gizli hafıza yok
+- [x] Çalışma / odak katmanı — `calisma` bölümünün dedektörleri
+- [x] Projeler alanı — "dün nerede kaldım"
+- [x] Sabah brifingi + gün kapanışı
+- [ ] **Finans alanı** — Bölüm 7'nin saydığı dördüncü alan, hiç yok
+- [ ] Odak ↔ jurnal bağı — trading seansı da bir odak seansı mı?
+
 ## Fikirler *(sıralanmamış, faz atanmamış)*
 
 -
