@@ -68,6 +68,18 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 
 ---
 
+## Trading katmanları *(Memory → Journal → Compliance → Analytics → Review → Coach)*
+
+- [x] `playbook.yaml` — setup tanımları, kontrol listeleri, ceza ağırlıkları
+- [x] Genişletilmiş jurnal alanları (SL/TP, HTF, likidite, çıkış sebebi, etiket, görsel)
+- [x] Uyum karnesi + kalite skoru (`core/karne.py`)
+- [x] Geçmiş yeniden yazılamaz — ORIGINAL / POST-TRADE NOTE ayrımı
+- [ ] **Analytics** — setup × seans × RR kırılımı, tekrarlanan hata sayımı ve
+      toplam R etkisi ("gec_giris 12 kez, 8'i zarar, -4.7R")
+- [ ] **Review** — giriş gerekçesi ile çıkış gerekçesinin karşılaştırılması
+- [ ] **Coach** — istatistiği soru olarak yüzüne tutma, tavsiye vermeden
+      *(Değişmez 4'e en yakın duran yer — yazılırken sınır ayrıca gözden geçirilmeli)*
+
 ## Fikirler *(sıralanmamış, faz atanmamış)*
 
 -

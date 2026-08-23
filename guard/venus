@@ -101,11 +101,15 @@ komut_onayla() {
   # DENETİM MEKANİZMASINI değiştirmesidir. guard/ ajanın dünyasının
   # dışındadır — ona dokunan bir dal tartışmasız reddedilir. Bu kontrol
   # diff sınırından önce gelir, çünkü sınırın kendisi guard/ içindedir.
-  local dokunulan; dokunulan="$(git diff --name-only "$ana...$dal" -- guard/)"
+  # Bölüm 18.5 "Kurallar dosyası"nı da ajanın dokunamayacakları arasında sayar.
+  # kurallar.yaml ve playbook.yaml kök dizinde durur; korumasız bırakılırsa
+  # gece ajanı kendi denetlendiği ölçütleri gevşetebilir.
+  local dokunulan
+  dokunulan="$(git diff --name-only "$ana...$dal" -- guard/ kurallar.yaml playbook.yaml)"
   if [ -n "$dokunulan" ]; then
-    kirmizi "REDDEDİLDİ — bu dal guard/ dizinine dokunuyor:"
+    kirmizi "REDDEDİLDİ — bu dal korunan dosyalara dokunuyor:"
     sed 's/^/    /' <<< "$dokunulan"
-    sari "guard/ ajanın yazma alanı dışındadır (Bölüm 18.1)."
+    sari "guard/, kurallar.yaml ve playbook.yaml ajanın alanı dışındadır (18.1, 18.5)."
     sari "kendi sınırını değiştirebilen bir sistem, sınırlı değildir."
     return 1
   fi

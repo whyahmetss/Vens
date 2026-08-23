@@ -27,6 +27,18 @@ from .log import VERI
 
 IHLALLER = VERI / "ihlaller.jsonl"
 
+# Bu dosyanın ürettiği kural adları. playbook.yaml'daki `ceza` anahtarları
+# buna karşı doğrulanır — tanınmayan bir ceza sessizce hiçbir şey yapardı.
+KURAL_ADLARI = (
+    "trading.zorunlu_alanlar",
+    "trading.gunluk_islem_limiti",
+    "trading.maks_risk_yuzde",
+    "trading.min_rr",
+    "trading.gunluk_maks_kayip_r",
+    "trading.izinli_seanslar",
+    "trading.yasak",
+)
+
 
 @dataclass(frozen=True)
 class Ihlal:
@@ -52,11 +64,15 @@ def _dolu(kayit: dict, alan: str) -> bool:
 
 
 def denetle(kayit: dict[str, Any], kurallar: Kurallar,
-            gunun_kayitlari: list[dict[str, Any]] | None = None) -> list[Ihlal]:
+            gunun_kayitlari: list[dict[str, Any]] | None = None,
+            min_rr: float | None = None) -> list[Ihlal]:
     """Tek bir jurnal kaydını kurallara karşı denetler.
 
     `gunun_kayitlari`: aynı güne ait, bu kayıt DAHİL tüm kayıtlar. Günlük limit
     ve kayıp sonrası bekleme gibi kurallar tek kayda bakarak denetlenemez.
+
+    `min_rr`: setup'a özel asgari R:R (playbook). Yalnızca kurallar.yaml'daki
+    değerden SIKI ise uygulanır — setup tanımı global disiplini gevşetemez.
     """
     gunun_kayitlari = gunun_kayitlari or [kayit]
     ihlaller: list[Ihlal] = []
@@ -83,11 +99,13 @@ def denetle(kayit: dict[str, Any], kurallar: Kurallar,
                               f"risk %{risk:g} — limit %{maks_risk:g}"))
 
     # --- planlanan R:R ---
-    min_rr = kurallar.deger("trading.min_rr")
+    esik = kurallar.deger("trading.min_rr")
+    if min_rr is not None and (esik is None or min_rr > esik):
+        esik = min_rr                      # setup daha sıkıysa o geçerli
     hedef = _sayi(kayit, "hedef_r")
-    if min_rr is not None and hedef is not None and hedef < min_rr:
+    if esik is not None and hedef is not None and hedef < esik:
         ihlaller.append(Ihlal("trading.min_rr",
-                              f"hedef {hedef:g}R — en az {min_rr:g}R olmalıydı"))
+                              f"hedef {hedef:g}R — en az {esik:g}R olmalıydı"))
 
     # --- günlük kayıp tavanı (net) ---
     maks_kayip = kurallar.deger("trading.gunluk_maks_kayip_r")

@@ -1,0 +1,60 @@
+# VENÜS — playbook
+#
+# Setup tanımların. `kurallar.yaml` "neyi asla yapma" der; bu dosya
+# "bir işlemin geçerli sayılması için ne görmüş olman gerekir" der.
+#
+# ÖNEMLİ SINIR: Venüs grafiği GÖREMEZ. Buradaki kontrol maddeleri Venüs'ün
+# doğrulaması değil, SENİN BEYANINDIR. Değeri şuradan gelir: beyanı sonucu
+# bilmeden önce verirsin ve kilitlenir. Sonradan "aslında HTF de uygundu"
+# diyemezsin — o ancak not olarak eklenir.
+#
+# DOLDURULMAYI BEKLİYOR. Aşağıdaki setup senin şartnamede geçen modelin;
+# maddeleri ve ağırlıkları kendine göre değiştir.
+
+setuplar:
+  sweep_mss_fvg:
+    ad: "Liquidity Sweep → MSS → FVG"
+
+    # Bu setup için asgari R:R. kurallar.yaml'ı yalnızca SIKILAŞTIRABİLİR.
+    # Daha gevşek bir değer yazılırsa yok sayılır ve `playbook` uyarır —
+    # setup tanımı global disiplini gevşetmemeli.
+    min_rr: 2.5
+
+    # Ağırlıklar kalite skorundan düşülecek puanlardır. Toplamları 100 olmak
+    # zorunda değil; önem sırasını sen belirlersin.
+    kontrol:
+      - ad: liquidity_sweep
+        soru: "Likidite süpürüldü mü? (BSL/SSL, EQH/EQL)"
+        agirlik: 20
+      - ad: mss
+        soru: "MSS / CHoCH teyit edildi mi?"
+        agirlik: 25
+      - ad: fvg
+        soru: "FVG'ye dönüş alındı mı?"
+        agirlik: 20
+      - ad: ote
+        soru: "Giriş OTE bölgesinde mi?"
+        agirlik: 15
+
+# Tekrarlanan hata sözlüğü. Kayda `etiket=fomo,gec_giris` diye işlenir.
+# Analytics katmanı bunları sayacak — listede olmayan etiket reddedilir,
+# yoksa aynı hata beş farklı yazımla beş ayrı hata gibi görünür.
+etiketler:
+  - fomo
+  - gec_giris
+  - erken_cikis
+  - erken_giris
+  - plan_disi
+  - revenge
+
+# Kural ihlallerinin skora maliyeti. Buradaki anahtarlar core/denetci.py'nin
+# ürettiği kural adları olmalı; tanınmayan anahtar `playbook` komutunda
+# raporlanır (sessizce hiçbir şey yapan ayar bırakmayalım).
+ceza:
+  trading.maks_risk_yuzde:      30
+  trading.gunluk_maks_kayip_r:  25
+  trading.gunluk_islem_limiti:  20
+  trading.izinli_seanslar:      20
+  trading.yasak:                20
+  trading.min_rr:               15
+  trading.zorunlu_alanlar:      10

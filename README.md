@@ -27,6 +27,7 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `notlar [adet]` | son notlar |
 | `fiyat <sembol>` | canlı spot fiyat (`fiyat BTC`) |
 | `kurallar` | aktif kuralları ve kural dosyasındaki sorunları göster |
+| `playbook [setup]` | setup tanımları ve kontrol listeleri |
 | `ihlaller [adet]` | kaydedilmiş kural ihlalleri ve dağılımı |
 | `jurnal <alan=değer>` | işlem kaydı ekle, kayıt anında kural denetimi |
 | `kayitlar [adet]` | son jurnal kayıtları |
@@ -55,6 +56,8 @@ core/
   registry.py     yetenek kayıt defteri, risk sınıfları, izinler
   kurallar.py     kurallar.yaml okuyucu + doğrulayıcı
   denetci.py      kural ihlali denetleyicisi (deterministik)
+  playbook.py     setup tanımları + kontrol listeleri
+  karne.py        uyum karnesi ve kalite skoru
   jurnal.py       işlem kaydı biçimi + jsonl depo
   niyet.py        serbest cümle → yetenek eşlemesi (Faz 3)
   model.py        görev başına model seçimi
@@ -118,6 +121,52 @@ jurnal sembol=XAUUSD yon=long seans=londra risk=1 hedef_r=3 sonuc_r=2.4 \
 Giriş serbest cümle değil `alan=değer`: niyet çözücü Faz 3'te geliyor, o zamana kadar
 giriş tahmin edilmemeli. `zaman=SS:DD` işlemin zamanını kaydın zamanından ayırır —
 gece toplu girilen kayıtlarda "kayıp sonrası bekleme" kuralı yoksa anlamsızlaşır.
+
+## Playbook ve kalite karnesi
+
+`kurallar.yaml` "neyi asla yapma" der. `playbook.yaml` "bir işlemin geçerli
+sayılması için ne görmüş olman gerekir" der. İkisi birlikte her kayda bir karne
+çıkarır:
+
+```
+karne · 5/11 · kalite 0/100
+  ✓ zorunlu_alanlar      uygun
+  ✗ maks_risk_yuzde      risk %4 — limit %1
+  ✗ izinli_seanslar      izinli olmayan seans: asya
+  ✗ liquidity_sweep      Likidite süpürüldü mü?
+```
+
+Skor deterministiktir: 100'den başlar, her ihlal ve her işaretlenmemiş kontrol
+maddesi kendi ağırlığı kadar düşürür. Ağırlıklar `playbook.yaml`'da. Modele
+hiçbir şey sorulmaz — aynı kayıt her zaman aynı skoru verir.
+
+Setup'a özel `min_rr` global kuralı **yalnızca sıkılaştırabilir.** Daha gevşek
+bir değer yok sayılır ve `playbook` uyarır.
+
+**Venüs grafiği göremez.** "liquidity_sweep ✓" onun doğrulaması değil, senin
+beyanın. Değeri şuradan gelir: beyanı sonucu bilmeden verirsin ve kilitlenir.
+
+## Geçmiş yeniden yazılamaz
+
+Kayıt yazıldıktan sonra girişteki gerekçe değişmez. `tamamla` yalnızca girişte
+bilinmesi **imkânsız** olan ve hâlâ **boş** olan alanları doldurur:
+
+```
+sonuc_r · cikis_sebebi · execution · gorsel · etiket
+```
+
+Başka bir alana yazmak üzerine yazmaz, işlem sonrası nota döner:
+
+```
+ORIGINAL
+  giriş     OTE 0.705
+  plan      long  risk %5  hedef 3R
+POST-TRADE NOTE
+  08-23 06:13   risk: 1.0 · htf: aslında bullish idi
+```
+
+"Aslında HTF de uygundu" demek meşrudur; onu girişteki gerekçenmiş gibi
+göstermek değildir. Sonradan hikâye uydurulamaz.
 
 ## Serbest cümle (Faz 3)
 

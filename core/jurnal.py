@@ -23,10 +23,18 @@ from .log import VERI
 JURNAL = VERI / "jurnal.jsonl"
 
 # Sayısal alanlar. `sonuc_r` boş kalabilir: pozisyon henüz kapanmamıştır.
-SAYI = ("risk", "hedef_r", "sonuc_r")
+SAYI = ("risk", "hedef_r", "sonuc_r", "sl", "tp")
 # evet/hayır alanları — `yasak` kurallarının dedektörleri bunlara bakar.
 IKILI = ("stop_genisletme", "plan_disi_giris")
-METIN = ("sembol", "yon", "seans", "setup", "giris_sebebi", "execution", "duygu")
+METIN = ("sembol", "yon", "seans", "setup", "giris_sebebi", "cikis_sebebi",
+         "execution", "duygu", "htf", "likidite", "bias", "gorsel")
+# Virgülle ayrılan listeler: `etiket=fomo,gec_giris`, `kontrol=sweep,mss,fvg`
+LISTE = ("etiket", "kontrol")
+
+# Girişte bilinmesi İMKÂNSIZ olan alanlar. `tamamla` yalnızca bunları ve
+# yalnızca BOŞ olanlarını doldurabilir — sonucu yazmak geçmişi değiştirmek
+# değil, yeni bilginin gelmesidir. Dolu bir alana yazmak nottur, düzeltme değil.
+SONRADAN_BILINEBILIR = ("sonuc_r", "cikis_sebebi", "execution", "gorsel", "etiket")
 
 YON = {"long": "long", "l": "long", "al": "long", "alis": "long", "alış": "long",
        "short": "short", "s": "short", "sat": "short", "satis": "short", "satış": "short"}
@@ -100,6 +108,11 @@ def ayristir(metin: str) -> Ayristirma:
                 veri[alan] = d
         elif alan == "seans":
             veri[alan] = ham.lower()
+        elif alan in LISTE:
+            oge = tuple(dict.fromkeys(
+                p.strip().lower() for p in ham.split(",") if p.strip()))
+            if oge:
+                veri[alan] = list(oge)
         elif alan in METIN:
             veri[alan] = ham
         else:
@@ -152,16 +165,57 @@ def yaz(kayit: dict[str, Any]) -> dict[str, Any]:
     return kayit
 
 
-def duzelt(kimlik: str, veri: dict[str, Any]) -> dict[str, Any]:
-    """Var olan kaydı düzeltir — ama eskisini SİLMEZ.
+def dolu_mu(kayit: dict[str, Any], alan: str) -> bool:
+    d = kayit.get(alan)
+    if d is None:
+        return False
+    if isinstance(d, str):
+        return bool(d.strip())
+    if isinstance(d, (list, tuple, dict)):
+        return bool(d)
+    return True
 
-    Depo append-only kalır: düzeltme yeni bir satırdır. Jurnal olan biteni
-    tutar; "risk %5'ti, sonra %1 yazdım" bilgisi kaybolursa jurnal disiplin
-    aracı olmaktan çıkar. `hepsi()` okurken düzeltmeleri üstüne uygular ve
-    kaydın kaç kez düzeltildiğini işaretler.
+
+def ayir(kayit: dict[str, Any], veri: dict[str, Any]) -> tuple[dict, dict]:
+    """Gelen alanları ikiye ayırır: (yazılabilir, reddedilen).
+
+    Yazılabilir = SONRADAN_BILINEBILIR listesinde VE kayıtta hâlâ boş.
+    Kalan her şey reddedilir; çağıran onu not olarak eklemelidir.
+
+    Bu ayrım sistemin dürüstlük dayanağı: sonucu yazmak yeni bilgidir,
+    girişteki riski değiştirmek geçmişi yeniden yazmaktır.
+    """
+    yazilabilir, reddedilen = {}, {}
+    for alan, deger in veri.items():
+        if alan in SONRADAN_BILINEBILIR and not dolu_mu(kayit, alan):
+            yazilabilir[alan] = deger
+        else:
+            reddedilen[alan] = deger
+    return yazilabilir, reddedilen
+
+
+def duzelt(kimlik: str, veri: dict[str, Any]) -> dict[str, Any]:
+    """Kaydın BOŞ bir alanını doldurur — hiçbir şeyin üzerine yazmaz.
+
+    Depo append-only kalır: düzeltme yeni bir satırdır. Çağıran, yalnızca
+    `ayir()`'ın yazılabilir bulduğu alanları buraya geçirmelidir.
     """
     kayit = {"duzeltme": kimlik,
              "t": datetime.now().isoformat(timespec="seconds"), **veri}
+    with JURNAL.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
+    return kayit
+
+
+def not_ekle(kimlik: str, metin: str) -> dict[str, Any]:
+    """İşlem sonrası not. Taban kaydı DEĞİŞTİRMEZ, yanına yazar.
+
+    "Aslında HTF bias da uygundu" demek meşrudur; onu girişteki gerekçenmiş
+    gibi göstermek değildir. Not ayrı satırda durur ve `kayit` çıktısında
+    ORIGINAL'dan ayrı gösterilir — sonradan hikâye uydurulamasın.
+    """
+    kayit = {"not": kimlik, "t": datetime.now().isoformat(timespec="seconds"),
+             "metin": metin}
     with JURNAL.open("a", encoding="utf-8") as f:
         f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
     return kayit
@@ -188,10 +242,13 @@ def hepsi() -> list[dict[str, Any]]:
     kayitlar: dict[str, dict] = {}
     sira: list[str] = []
     duzeltmeler: dict[str, list[dict]] = {}
+    notlar: dict[str, list[dict]] = {}
 
     for k in _satirlar():
         if "duzeltme" in k:
             duzeltmeler.setdefault(str(k["duzeltme"]), []).append(k)
+        elif "not" in k:
+            notlar.setdefault(str(k["not"]), []).append(k)
         elif "id" in k:
             kayitlar[k["id"]] = dict(k)
             sira.append(k["id"])
@@ -206,6 +263,11 @@ def hepsi() -> list[dict[str, Any]]:
                     hedef[alan] = deger
         hedef["duzeltildi"] = len(liste)
         hedef["duzeltme_t"] = liste[-1]["t"]
+
+    for kimlik, liste in notlar.items():
+        hedef = kayitlar.get(kimlik)
+        if hedef is not None:
+            hedef["notlar"] = [{"t": n["t"], "metin": n.get("metin", "")} for n in liste]
 
     out = [kayitlar[i] for i in sira]
     out.sort(key=lambda k: k.get("islem_t", k.get("t", "")))

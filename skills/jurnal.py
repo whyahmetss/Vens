@@ -14,6 +14,8 @@ from core.registry import Risk, Perm, skill, satir, bilgi, uyari, vurgu, alan, b
 from core import jurnal as depo
 from core import denetci
 from core import kurallar as kural_motoru
+from core import karne as karne_motoru
+from core import playbook as playbook_motoru
 from core.bildirim import Seviye, bildir
 
 AYLAR = ("Oca", "Şub", "Mar", "Nis", "May", "Haz",
@@ -22,11 +24,39 @@ AYLAR = ("Oca", "Şub", "Mar", "Nis", "May", "Haz",
 # Bölüm 11'deki kayıt düzeni: sıra ve etiketler oradan.
 # Etiketler baştan küçük harf: "GİRİŞ".lower() Python'da "gi̇ri̇ş" üretir
 # (birleşen nokta). Büyük harfe çevirmek gerekirse kabuk Türkçe kurallarıyla yapar.
-SATIRLAR = (("setup", "setup"), ("seans", "seans"), ("giris_sebebi", "giriş"),
-            ("execution", "execution"), ("duygu", "duygu"))
+SATIRLAR = (("setup", "setup"), ("seans", "seans"), ("bias", "bias"),
+            ("htf", "htf"), ("likidite", "likidite"),
+            ("giris_sebebi", "giriş"), ("cikis_sebebi", "çıkış"),
+            ("execution", "execution"), ("duygu", "duygu"), ("gorsel", "görsel"))
 
-ORNEK = ('jurnal sembol=XAUUSD yon=long seans=londra risk=1 hedef_r=3 sonuc_r=2.4 '
-         'setup="sweep → MSS → FVG" giris_sebebi="OTE 0.705" execution=iyi duygu=sabırsız')
+ORNEK = ('jurnal sembol=XAUUSD yon=long seans=londra setup=sweep_mss_fvg '
+         'kontrol=liquidity_sweep,mss,fvg,ote risk=1 hedef_r=3 sl=2612 tp=2680 '
+         'htf="haftalık BOS sonrası" likidite=SSL giris_sebebi="OTE 0.705" duygu=sakin')
+
+ISARET = {True: "✓", False: "✗"}
+
+
+def _karne_satirlari(k, kayit) -> list:
+    """Karneyi çıktıya çevirir. Geçen maddeler de gösterilir — "8/8 uygun"
+    görmek, ihlal listesini görmek kadar bilgi taşır."""
+    out = [baslik(f"karne · {k.gecen}/{k.toplam} · kalite {k.skor}/100")]
+    for m in k.maddeler:
+        out.append(alan(f"{ISARET[m.gecti]} {m.ad}",
+                        m.aciklama or ("uygun" if m.gecti else f"-{m.agirlik}"),
+                        "" if m.gecti else "warn"))
+    if not k.setup_tanimli:
+        out.append(bilgi(f"setup '{kayit.get('setup') or '—'}' playbook'ta yok — "
+                         f"yalnızca kural denetimi yapıldı."))
+    return out
+
+
+def _denetle(kayit, gunun):
+    """Kural denetimi + karne. Playbook setup'a özel R:R'yi sıkılaştırabilir."""
+    kurallar = kural_motoru.yukle()
+    pb = playbook_motoru.yukle(kurallar=kurallar)
+    ihlaller = denetci.denetle(kayit, kurallar, gunun,
+                               min_rr=karne_motoru.setup_min_rr(kayit, pb))
+    return kurallar, ihlaller, karne_motoru.cikar(kayit, ihlaller, pb)
 
 
 def _tarih(kayit) -> str:
@@ -51,21 +81,26 @@ def _baslik(kayit) -> str:
 async def _jurnal(arg):
     if not arg.strip():
         return [bilgi("kullanım: alan=değer çiftleri. örnek:"), satir(f"  {ORNEK}"),
-                bilgi(""), bilgi("alanlar: sembol yon seans risk hedef_r sonuc_r "
-                                 "setup giris_sebebi execution duygu"),
-                bilgi("        stop_genisletme plan_disi_giris zaman"),
-                bilgi("sonuc_r boş bırakılırsa pozisyon açık sayılır.")]
+                bilgi(""),
+                bilgi("plan     : sembol yon seans setup kontrol risk hedef_r sl tp"),
+                bilgi("gerekçe  : bias htf likidite giris_sebebi duygu"),
+                bilgi("sonrası  : sonuc_r cikis_sebebi execution gorsel etiket"),
+                bilgi("işaret   : stop_genisletme plan_disi_giris zaman"),
+                bilgi(""),
+                bilgi("sonuc_r boş bırakılırsa pozisyon açık sayılır — "
+                      "sonra: tamamla <id> sonuc_r=2.4"),
+                bilgi("kontrol listesini setup'ından görmek için: playbook")]
 
     coz = depo.ayristir(arg)
     if coz.hatalar:
         return [uyari("kayıt yazılmadı:")] + [satir(f"  {h}") for h in coz.hatalar]
 
     kayit = depo.hazirla(coz.veri)
-    kurallar = kural_motoru.yukle()
 
     # Günlük limit ve bekleme kuralları bu kaydı da sayar.
     gunun = depo.gun(datetime.fromisoformat(kayit["islem_t"]).date()) + [kayit]
-    ihlaller = denetci.denetle(kayit, kurallar, gunun)
+    kurallar, ihlaller, karne = _denetle(kayit, gunun)
+    kayit["skor"] = karne.skor
     if ihlaller:
         kayit["ihlaller"] = [i.mesaj for i in ihlaller]
 
@@ -77,13 +112,12 @@ async def _jurnal(arg):
         # düşmez. Kayda geçer ki `bildirimler` ve geçmiş eksik kalmasın.
         bildir(Seviye.KRITIK, i.mesaj, f"jurnal:{kayit['id']}", kesintisiz=True)
 
-    out = [bilgi(f"kaydedildi · {kayit['id']}"), satir(_baslik(kayit))]
+    out = [bilgi(f"kaydedildi · {kayit['id']}"), satir(_baslik(kayit)), bosluk()]
     for note in coz.notlar:
         out.append(bilgi(f"  {note}"))
+    out += _karne_satirlari(karne, kayit)
     if ihlaller:
-        out.append(satir(""))
-        out.append(uyari(f"{len(ihlaller)} kural ihlali:"))
-        out += [uyari(f"  ✗ {i.mesaj}") for i in ihlaller]
+        out.append(bosluk())
         out.append(bilgi("kaydedildi, engellenmedi. karar senin."))
     if not kurallar.okundu:
         out.append(uyari("kural dosyası okunamadı — bu kayıt denetlenmedi."))
@@ -96,8 +130,12 @@ async def _tamamla(arg):
     parca = arg.split(None, 1)
     if len(parca) < 2:
         return [bilgi("kullanım: tamamla <id> alan=değer ..."),
-                satir("  tamamla a3f1 sonuc_r=2.4 execution=iyi"),
-                bilgi("eski değer silinmez — düzeltme yeni satır olarak yazılır.")]
+                satir("  tamamla a3f1 sonuc_r=2.4 cikis_sebebi=\"TP1'de aldım\""),
+                bilgi(""),
+                bilgi("doldurulabilir (girişte bilinemezdi): "
+                      + ", ".join(depo.SONRADAN_BILINEBILIR)),
+                bilgi("dolu bir alana yazmak üzerine YAZMAZ — işlem sonrası "
+                      "not olarak eklenir.")]
 
     kimlik = parca[0].strip().lower()
     mevcut = depo.bul(kimlik)
@@ -110,43 +148,70 @@ async def _tamamla(arg):
     if not coz.veri:
         return [uyari("değişecek alan yok.")]
 
-    # islem_t düzeltilebilir ama kaydın kimliği ve yazılma zamanı değişmez.
-    veri = {a: d for a, d in coz.veri.items() if a not in ("id", "t")}
-    guncel = {**mevcut, **veri}
+    aday = {a: d for a, d in coz.veri.items() if a not in ("id", "t", "islem_t")}
+    # Geçmiş yeniden yazılamaz: yalnızca girişte bilinmesi imkânsız olan ve
+    # HÂLÂ BOŞ olan alanlar dolar. Kalan her şey nota döner.
+    yazilabilir, reddedilen = depo.ayir(mevcut, aday)
 
-    # Sonuç girilince günün net kaybı değişir; ihlaller yeniden hesaplanmalı.
-    kurallar = kural_motoru.yukle()
-    gun_tarihi = datetime.fromisoformat(guncel["islem_t"]).date()
-    gunun = [guncel if k.get("id") == kimlik else k for k in depo.gun(gun_tarihi)]
-    if all(k.get("id") != kimlik for k in gunun):
-        gunun.append(guncel)
-    ihlaller = denetci.denetle(guncel, kurallar, gunun)
+    out: list = []
+    if yazilabilir:
+        guncel = {**mevcut, **yazilabilir}
+        gun_tarihi = datetime.fromisoformat(guncel["islem_t"]).date()
+        gunun = [guncel if k.get("id") == kimlik else k for k in depo.gun(gun_tarihi)]
+        if all(k.get("id") != kimlik for k in gunun):
+            gunun.append(guncel)
 
-    onceki = set(mevcut.get("ihlaller") or [])
-    veri["ihlaller"] = [i.mesaj for i in ihlaller]
-    depo.duzelt(kimlik, veri)
+        # Sonuç girilince günün net kaybı değişir; ihlaller yeniden hesaplanır.
+        _, ihlaller, karne = _denetle(guncel, gunun)
+        onceki = set(mevcut.get("ihlaller") or [])
+        yazilabilir["ihlaller"] = [i.mesaj for i in ihlaller]
+        yazilabilir["skor"] = karne.skor
+        depo.duzelt(kimlik, yazilabilir)
 
-    # Yalnızca YENİ ihlaller kaydedilir; eskiler ihlaller.jsonl'da zaten var.
-    yeni_ihlal = [i for i in ihlaller if i.mesaj not in onceki]
-    if yeni_ihlal:
-        denetci.kaydet(guncel, yeni_ihlal)
-        for i in yeni_ihlal:
-            bildir(Seviye.KRITIK, i.mesaj, f"jurnal:{kimlik}", kesintisiz=True)
+        # Yalnızca YENİ ihlaller kaydedilir; eskiler ihlaller.jsonl'da zaten var.
+        yeni_ihlal = [i for i in ihlaller if i.mesaj not in onceki]
+        if yeni_ihlal:
+            denetci.kaydet(guncel, yeni_ihlal)
+            for i in yeni_ihlal:
+                bildir(Seviye.KRITIK, i.mesaj, f"jurnal:{kimlik}", kesintisiz=True)
 
-    out = [bilgi(f"güncellendi · {kimlik}"), satir(_baslik(guncel))]
-    out += [alan(a, str(d)) for a, d in veri.items() if a != "ihlaller"]
+        out += [bilgi(f"güncellendi · {kimlik}"), satir(_baslik(guncel))]
+        out += [alan(a, ", ".join(d) if isinstance(d, list) else str(d))
+                for a, d in yazilabilir.items() if a not in ("ihlaller", "skor")]
+        if yeni_ihlal:
+            out.append(bosluk())
+            out += _karne_satirlari(karne, guncel)
+            out.append(bilgi("kaydedildi, engellenmedi. karar senin."))
+    else:
+        guncel = mevcut
+
+    if reddedilen:
+        # Kullanıcı dolu bir alanı değiştirmek istedi. Üzerine YAZILMAZ; niyet
+        # not olarak kaydedilir. Sonradan hikâye uydurulamasın diye ORIGINAL
+        # ile POST-TRADE NOTE ayrı durur.
+        metin = " · ".join(
+            f"{a}: {', '.join(d) if isinstance(d, list) else d}"
+            for a, d in reddedilen.items())
+        depo.not_ekle(kimlik, metin)
+        out.append(bosluk())
+        out.append(uyari("üzerine yazılmadı:"))
+        for a, d in reddedilen.items():
+            istenen = ", ".join(d) if isinstance(d, list) else d
+            if depo.dolu_mu(mevcut, a):
+                eski_d = mevcut.get(a)
+                eski_d = ", ".join(eski_d) if isinstance(eski_d, list) else eski_d
+                out.append(alan(a, f"{eski_d}  →  istenen: {istenen}   "
+                                   f"(zaten dolu)", "warn"))
+            else:
+                # Boş ama giriş anına ait bir alan. Sonradan doldurmak, o
+                # gerekçeyi girişte vermişsin gibi gösterirdi.
+                out.append(alan(a, f"istenen: {istenen}   "
+                                   f"(giriş alanı — sonradan yazılamaz)", "warn"))
+        out.append(bilgi("işlem sonrası not olarak eklendi. "
+                         "giriş gerekçesi olduğu gibi duruyor."))
+
     for note in coz.notlar:
         out.append(bilgi(f"  {note}"))
-    if yeni_ihlal:
-        out.append(satir(""))
-        out.append(uyari(f"{len(yeni_ihlal)} yeni kural ihlali:"))
-        out += [uyari(f"  ✗ {i.mesaj}") for i in yeni_ihlal]
-        out.append(bilgi("kaydedildi, engellenmedi. karar senin."))
-    kalkan = onceki - {i.mesaj for i in ihlaller}
-    if kalkan:
-        # Düzeltme bir ihlali "kaldırdıysa" bu sessizce geçmemeli.
-        out.append(bilgi(f"{len(kalkan)} ihlal artık geçerli değil — "
-                         f"eski kayıt jurnalde duruyor."))
     return out
 
 
@@ -178,10 +243,11 @@ async def _kayit(arg):
     if k is None:
         return [uyari(f"kayıt bulunamadı: {arg.strip()}")]
 
-    out = [baslik(_baslik(k))]
+    out = [baslik(_baslik(k)), baslik("original")]
     for ad, etiket in SATIRLAR:
         if k.get(ad):
-            out.append(alan(etiket, k[ad]))
+            d = k[ad]
+            out.append(alan(etiket, ", ".join(d) if isinstance(d, list) else d))
     if k.get("yon") or k.get("risk") is not None or k.get("hedef_r") is not None:
         parca = []
         if k.get("yon"):
@@ -190,6 +256,9 @@ async def _kayit(arg):
             parca.append(f"risk %{k['risk']:g}")
         if isinstance(k.get("hedef_r"), (int, float)):
             parca.append(f"hedef {k['hedef_r']:g}R")
+        for ad, etiket in (("sl", "SL"), ("tp", "TP")):
+            if isinstance(k.get(ad), (int, float)):
+                parca.append(f"{etiket} {k[ad]:g}")
         out.append(alan("plan", "  ".join(parca)))
 
     isaretli = [etiket for ad, etiket in
@@ -202,6 +271,11 @@ async def _kayit(arg):
         out.append(alan("düzeltme",
                         f"{k['duzeltildi']} kez · son {str(k.get('duzeltme_t',''))[5:16].replace('T',' ')}"))
 
+    if k.get("kontrol"):
+        out.append(alan("kontrol", ", ".join(k["kontrol"])))
+    if k.get("etiket"):
+        out.append(alan("etiket", ", ".join(k["etiket"]), "warn"))
+
     ihlaller = k.get("ihlaller") or []
     out.append(alan("kural", "✓ ihlal yok" if not ihlaller else f"✗ {len(ihlaller)} ihlal",
                     "" if not ihlaller else "warn"))
@@ -209,12 +283,24 @@ async def _kayit(arg):
 
     # Bilinen alanların dışında kalanlar (kullanıcının kendi eklediği alanlar).
     bilinen = {"id", "t", "islem_t", "ihlaller", "yon", "risk", "hedef_r", "sonuc_r",
-               "sembol", "stop_genisletme", "plan_disi_giris",
-               "duzeltildi", "duzeltme_t", *(a for a, _ in SATIRLAR)}
+               "sembol", "stop_genisletme", "plan_disi_giris", "kontrol", "etiket",
+               "duzeltildi", "duzeltme_t", "notlar", "skor",
+               *(a for a, _ in SATIRLAR)}
     ekstra = {a: d for a, d in k.items() if a not in bilinen}
     if ekstra:
         out.append(bosluk())
-        out += [alan(a, d) for a, d in ekstra.items()]
+        out += [alan(a, ", ".join(d) if isinstance(d, list) else d)
+                for a, d in ekstra.items()]
+
+    # İşlem sonrası notlar ORIGINAL'dan ayrı durur: sonradan eklenen gerekçe,
+    # girişteki gerekçeymiş gibi görünmemeli.
+    notlar = k.get("notlar") or []
+    if notlar:
+        out.append(bosluk())
+        out.append(baslik("post-trade note"))
+        for n in notlar:
+            out.append(alan(str(n.get("t", ""))[5:16].replace("T", " "),
+                            n.get("metin", "")))
     return out
 
 
@@ -280,7 +366,10 @@ async def _eksik(arg):
                 for k in kayitlar]
     bosluklu = [(k, eksikler) for k, eksikler in bosluklu if eksikler]
 
-    if not acik and not bosluklu:
+    if not acik and not bosluklu and not [
+            k for k in kayitlar
+            if playbook_motoru.yukle(kurallar=kural_motoru.yukle()).setup(
+                k.get("setup", "")) is not None and "kontrol" not in k]:
         bugun = len(depo.gun(date.today(), kayitlar))
         return [bilgi("eksik kayıt yok." + (f" bugün {bugun} işlem." if bugun else ""))]
 
@@ -290,6 +379,19 @@ async def _eksik(arg):
         out.append(bilgi("kapatmak için: tamamla <id> sonuc_r=2.4"))
         out += [alan(k.get("id", "????"), _baslik(k)) for k in acik[-10:]]
         out.append(bosluk())
+    # Kontrol listesi HİÇ cevaplanmamış kayıtlar. İşaretlenmemiş madde geçerli
+    # bir cevaptır ("görmedim"); hiç cevaplamamak eksikliktir.
+    pb = playbook_motoru.yukle(kurallar=kural_motoru.yukle())
+    cevapsiz = [k for k in kayitlar
+                if pb.setup(k.get("setup", "")) is not None and "kontrol" not in k]
+    if cevapsiz:
+        out.append(baslik(f"{len(cevapsiz)} kayıtta kontrol listesi cevaplanmamış"))
+        out += [alan(k.get("id", "????"), f"{k.get('sembol','?')}  setup {k.get('setup')}")
+                for k in cevapsiz[-10:]]
+        out.append(bilgi("cevaplamak artık mümkün değil — giriş anına ait. "
+                         "sonraki kayıtta kontrol=... yaz."))
+        out.append(bosluk())
+
     if bosluklu:
         out.append(baslik(f"{len(bosluklu)} kayıtta zorunlu alan boş"))
         out += [alan(f"{k.get('id', '????')}  {k.get('sembol', '?')}", ", ".join(e), "warn")
