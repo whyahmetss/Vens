@@ -1,0 +1,15 @@
+# VENÜS — kapatılmış izinler
+#
+# Şartname Bölüm 9: "Kullanıcı izinleri tek ekrandan görür ve kapatabilir."
+# `izinler` komutu görmek için; kapatmak bu dosyayı düzenlemektir.
+#
+# Buraya yazılan izin HİÇBİR yetenekte çalışmaz. O izni isteyen yetenek
+# çağrıldığında çekirdek reddeder ve sebebini söyler.
+#
+# Geçerli izinler: okuma · yazma · calistirma · silme · tarayici · iletisim · ag
+
+kapali: []
+
+# Örnek — dış ağ erişimini tümüyle kesmek:
+# kapali:
+#   - ag

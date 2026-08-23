@@ -64,3 +64,37 @@ async def _log(arg):
         out.append(alan(f"{k['t'][11:19]}  {k['tur']}",
                         f"{ozet}{'   ' + sonuc if sonuc else ''}"))
     return out
+
+
+@skill("izinler", "yeteneklerin istediği izinler ve kapalı olanlar", Risk.YESIL,
+       izinler=(Perm.OKUMA,), kullanim="izinler")
+async def _izinler(arg):
+    """Bölüm 9: "Kullanıcı izinleri tek ekrandan görür ve kapatabilir."
+
+    Görmek buradan; kapatmak guard/izinler.yaml'ı düzenlemek. Kapatmayı
+    komuta bağlamak, Venüs'ün kendi iznini açabilmesi demek olurdu.
+    """
+    from core import izin
+
+    kapali = izin.kapali()
+    kullanan: dict[str, list[str]] = {}
+    for s in hepsi():
+        for i in s.izinler:
+            kullanan.setdefault(i.value, []).append(s.ad)
+
+    out = [baslik("izinler")]
+    for ad in sorted(kullanan):
+        yetenekler = ", ".join(sorted(kullanan[ad]))
+        if ad in kapali:
+            out.append(alan(f"✗ {ad}", f"KAPALI — {yetenekler}", "warn"))
+        else:
+            out.append(alan(ad, yetenekler))
+
+    kullanilmayan = sorted({p.value for p in Perm} - set(kullanan))
+    if kullanilmayan:
+        out.append(bosluk())
+        out.append(bilgi("hiçbir yeteneğin istemediği izinler: " + ", ".join(kullanilmayan)))
+
+    out.append(bosluk())
+    out.append(bilgi(f"{len(kapali)} izin kapalı · kapatmak/açmak için: {izin._dosya()}"))
+    return out

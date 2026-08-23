@@ -39,6 +39,10 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `seviye <sembol> <fiyat>` | izlenecek fiyat seviyesi işaretle |
 | `seviyeler` | işaretli seviyeler |
 | `bias <sembol> <yön>` | kendi HTF bias notun |
+| `beyazliste` | Venüs'ün açabildiği uygulama, sayfa, düzenler |
+| `ac <ad>` | kayıtlı uygulama/sayfa aç |
+| `duzen <ad>` | kayıtlı çalışma alanı düzenini kur |
+| `izinler` | hangi yetenek hangi izni istiyor, hangileri kapalı |
 | `log [adet]` | son olaylar |
 | `temizle` | ekranı boşalt (kabukta çalışır, çekirdeğe gitmez) |
 
@@ -57,6 +61,8 @@ core/
   zamanlayici.py  periyodik kontrol çalıştırıcısı
   sembol.py       konuşma tanıma sembol düzeltmesi
   kanal.py        kabuğa itme kanalı (bildirim + bağlam)
+  izin.py         izin denetimi (guard/izinler.yaml)
+guard/            ajanın yazma alanı DIŞINDA — izin + beyaz liste
   router.py       yönlendirme, risk kapısı, onay akışı
   log.py          jsonl olay günlüğü
   server.py       fastapi + websocket + kabuk servisi

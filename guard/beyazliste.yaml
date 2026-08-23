@@ -1,0 +1,38 @@
+# VENÜS — beyaz liste
+#
+# Şartname Bölüm 9: bilgisayar kontrolü sistemin EN RİSKLİ bölümüdür.
+# Venüs yalnızca burada yazan şeyleri açabilir. Serbest komut çalıştırma
+# yoktur (Değişmez 1) — model bir şey uydurursa listede bulamaz, çalıştıramaz.
+#
+# v1 kapsamı:  kayıtlı uygulama açma, kayıtlı sayfa açma, çalışma alanı düzeni
+# Kapsam dışı: serbest terminal komutu, klavye/mouse simülasyonu,
+#              dosya silme/taşıma, uygulama kapatma
+#
+# DOLDURULMAYI BEKLİYOR — komutlar işletim sistemine göre değişir, bu yüzden
+# örnekler yorumda bırakıldı. Kendi makinene uyanı aç ve düzenle.
+
+uygulamalar:
+  # Her giriş bir KOMUT LİSTESİDİR, düz metin değil. Liste olması şart:
+  # düz metin kabuk tarafından ayrıştırılır ve araya komut sıkıştırılabilir.
+  #
+  # tradingview:
+  #   komut: ["/usr/bin/flatpak", "run", "com.tradingview.desktop"]   # Linux
+  #   komut: ["open", "-a", "TradingView"]                            # macOS
+  #   komut: ["C:/Program Files/TradingView/TradingView.exe"]         # Windows
+  #   aciklama: grafik uygulaması
+
+sayfalar:
+  # Yalnızca http/https. Varsayılan tarayıcıda açılır.
+  #
+  # ekonomik-takvim: https://www.forexfactory.com/calendar
+  # jurnal-notlari:  https://notion.so/...
+
+duzenler:
+  # Çalışma alanı = sırayla açılacak kayıtlı girişler. Yeni bir şey tanımlamaz,
+  # yalnızca yukarıdakileri gruplar.
+  #
+  # trading:
+  #   aciklama: seans öncesi kurulum
+  #   adimlar:
+  #     - uygulama: tradingview
+  #     - sayfa: ekonomik-takvim

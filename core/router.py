@@ -8,7 +8,7 @@ Hangi yetenek, hangi parametre, izin var mı, onay gerekir mi.
 from __future__ import annotations
 import inspect, time
 
-from . import log, niyet, sembol
+from . import izin, log, niyet, sembol
 from .registry import Risk, bul, satir, uyari, bilgi
 
 # Bekleyen onaylar: oturum -> (yetenek, argüman)
@@ -59,7 +59,15 @@ async def yonlendir(girdi: str, oturum: str = "yerel",
 
 
 async def _risk_kapisi(s, arg: str, oturum: str) -> list[dict]:
-    """Bölüm 2. Niyet çözücüyle gelen çağrı da buradan geçer — atlanabilir yol yok."""
+    """Bölüm 2 ve 9. Niyet çözücüyle gelen çağrı da buradan geçer — atlanabilir yol yok."""
+    # İzin kapısı riskten önce gelir: kapatılmış izin isteyen yetenek onaya
+    # bile sunulmaz (Bölüm 9).
+    engelli = izin.engel(s.izinler)
+    if engelli:
+        log.yaz("izin", olay="reddedildi", yetenek=s.ad, izin=engelli)
+        return [uyari(f"'{s.ad}' çalışmadı — kapalı izin: {', '.join(engelli)}"),
+                bilgi("izinler guard/izinler.yaml dosyasından açılır.")]
+
     if s.risk is Risk.TURUNCU:
         _BEKLEYEN[oturum] = (s, arg)
         log.yaz("onay_istendi", yetenek=s.ad, arg=arg)

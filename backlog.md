@@ -53,13 +53,13 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 
 ## Faz 7 — bilgisayar kontrolü
 
-- [ ] Beyaz liste tanımı
-- [ ] Uygulama / sayfa açma
-- [ ] Çalışma alanı düzeni
+- [x] Beyaz liste tanımı — `guard/beyazliste.yaml`
+- [x] Uygulama / sayfa açma — `ac <ad>`, yalnızca listedekiler
+- [x] Çalışma alanı düzeni — `duzen <ad>`
 
 ## Faz 8 — gece vardiyası
 
-- [ ] `guard/` dizini ve izin ayrımı
+- [x] `guard/` dizini ve izin ayrımı — izin ve beyaz liste dosyaları orada
 - [ ] Gece dalı + rapor üretimi
 - [ ] `onayla` / `reddet` / `ertele` / `geri-al` betikleri
 - [ ] Açılış sağlık kontrolü + otomatik geri dönüş
