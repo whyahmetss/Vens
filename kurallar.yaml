@@ -1,38 +1,65 @@
 # VENÜS — kurallar
 #
-# Kullanıcının kendi koyduğu kurallar. Faz 1'deki denetleyici bu dosyayı okur.
+# Kullanıcının kendi koyduğu kurallar. core/kurallar.py bu dosyayı okur,
+# core/denetci.py her jurnal kaydını buna karşı denetler.
 # Denetleyici DETERMİNİSTİK KODDUR — LLM'e sorulmaz.
 #
 # Venüs ihlali ENGELLEMEZ, KAYDEDER. Uzun vadede en değerli veri budur:
 # hangi kuralı, hangi durumda, ne sıklıkla çiğniyorsun.
 #
-# DOLDURULMAYI BEKLİYOR. Aşağıdaki değerler örnektir, kendi kurallarını yaz.
+# Her satırın yanında neden o değer olduğu yazıyor. Sana uymayanı değiştir —
+# dosyayı kaydetmen yeter, Venüs'ü yeniden başlatmana gerek yok.
+#
+# Bir kuralı geçici olarak kapatmak istersen değerini `null` yap; silme.
+# Silinen kural sessizce denetlenmez, `null` ise niyetin belli olur.
 
 trading:
+  # Killzone odaklı çalışmada iki iyi kurulum bir günün tamamıdır. Sınır
+  # düşük tutulur çünkü asıl risk kötü işlem değil, SIRADAKİ işlemdir.
   gunluk_islem_limiti: 2
+
+  # İşlem başına hesabın yüzdesi. %1 yerleşik eşiktir: üst üste beş kayıp
+  # hesabın %5'ini götürür, toparlanabilir bir aralık.
   maks_risk_yuzde: 1.0
+
+  # Girişte planlanan asgari ödül/risk. 2R altındaki bir plan, %50 isabetle
+  # bile seni ancak başa baş getirir — kurulumun kendisi zayıf demektir.
   min_rr: 2.0
+
+  # Günlük net kayıp tavanı. Buna değince gün biter; kaybı aynı gün geri
+  # almaya çalışmak jurnaldeki en pahalı örüntüdür.
   gunluk_maks_kayip_r: 2.0
 
+  # ICT killzone'ları. Asya seansı bilinçli olarak dışarıda: aralık dar,
+  # sweep'ler yanıltıcı. Sen Asya'da da çalışıyorsan listeye `asya` ekle.
   izinli_seanslar:
     - londra
     - new_york_am
 
-  # jurnal kaydında boş bırakılamayacak alanlar
+  # Jurnal kaydında boş bırakılamayacak alanlar. Üçü de "ne yaptım" değil
+  # "neden yaptım" sorusunu tutuyor — istatistiği anlamlı kılan kısım bu.
+  # `duygu` gereksiz görünebilir; revenge trading'i sonradan yakalamanın
+  # tek yolu o alandır.
   zorunlu_alanlar:
     - setup
     - giris_sebebi
     - duygu
 
-  # tespit edilip kaydedilecek davranışlar
+  # Tespit edilip kaydedilecek davranışlar. Buraya yalnızca dedektörü
+  # yazılmış ad girilebilir; olmayan bir ad `kurallar` komutunda hata verir.
   yasak:
     - stop_genisletme
     - kayip_sonrasi_bekleme_ihlali
     - plan_disi_giris
 
+  # Kayıptan sonra yeni işleme girmeden önce beklenecek süre. 30 dk, bir
+  # killzone'un kalanını kaçırmaya yetecek kadar uzun, günü bitirmeyecek
+  # kadar kısa.
   kayip_sonrasi_bekleme_dk: 30
 
 calisma:
-  # ileride kullanılacak — şimdilik boş bırakılabilir
+  # Bu iki alanın henüz dedektörü yok — Faz 5'teki bildirim bütçesi ve
+  # hatırlatıcılar gelince kullanılacak. Şimdiden değer yazmak, hiçbir şey
+  # yapmayan bir ayar bırakmak olur; o yüzden boş.
   gunluk_odak_saati: null
   gece_calisma_uyarisi_saat: null

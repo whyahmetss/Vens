@@ -7,8 +7,8 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 
 ## Faz 1 — kimlik ve kurallar
 
-- [ ] `kimlik.md` doldurulacak *(kullanıcı yapar)*
-- [ ] `kurallar.yaml` doldurulacak *(kullanıcı yapar)*
+- [x] `kimlik.md` doldurulacak — hitap kararı verildi, çözücünün okumadığı not edildi
+- [x] `kurallar.yaml` doldurulacak — ICT yerleşik değerleri, her satır gerekçeli
 - [x] `core/kurallar.py` — yaml okuyucu + doğrulayıcı
 - [x] `skills/kural.py` — `kurallar` komutu, aktif kuralları listeler
 - [x] Kural ihlali tespiti (deterministik, LLM yok)
