@@ -60,10 +60,10 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 ## Faz 8 — gece vardiyası
 
 - [x] `guard/` dizini ve izin ayrımı — izin ve beyaz liste dosyaları orada
-- [ ] Gece dalı + rapor üretimi
-- [ ] `onayla` / `reddet` / `ertele` / `geri-al` betikleri
-- [ ] Açılış sağlık kontrolü + otomatik geri dönüş
-- [ ] `GELISIM.md` günlüğü
+- [x] Gece dalı + rapor üretimi — `guard/gece`, lab/ worktree
+- [x] `onayla` / `reddet` / `ertele` / `geri-al` betikleri — `guard/venus`
+- [x] Açılış sağlık kontrolü + otomatik geri dönüş — `guard/venus baslat`
+- [x] `GELISIM.md` günlüğü
 
 ---
 

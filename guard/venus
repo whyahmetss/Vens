@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+# VENÜS — sabah döngüsü (şartname Bölüm 18.3)
+#
+# Bu betik BİLEREK saf bash + git'tir. `geri-al` Venüs açılmadığında da
+# çalışmak zorundadır; sistemin bozulduğu an, tam olarak ona ihtiyaç
+# duyulan andır. Python'a, sanal ortama, ağa bağımlı değildir.
+#
+# Ajanın erişimi yoktur (Bölüm 18.5).
+
+set -euo pipefail
+
+GUARD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KOK="$(cd "$GUARD/.." && pwd)"
+# shellcheck source=/dev/null
+[ -f "$GUARD/ayar.conf" ] && source "$GUARD/ayar.conf"
+: "${DIFF_UST_SINIR:=400}" "${ONAYLAMAMA_GUNU:=7}" "${DAL_ONEKI:=night}" "${IYI_ONEKI:=iyi}"
+
+cd "$KOK"
+
+kirmizi() { printf '\033[31m%s\033[0m\n' "$*"; }
+yesil()   { printf '\033[32m%s\033[0m\n' "$*"; }
+sari()    { printf '\033[33m%s\033[0m\n' "$*"; }
+
+gece_dallari() { git branch --list "$DAL_ONEKI/*" --format='%(refname:short)' | sort; }
+son_iyi()      { git tag --list "$IYI_ONEKI/*" --sort=-creatordate | head -1; }
+ana_dal()      { git symbolic-ref --quiet --short HEAD 2>/dev/null || echo HEAD; }
+
+iyi_isaretle() {
+  local etiket="$IYI_ONEKI/$(date +%Y-%m-%d-%H%M)"
+  git tag -f "$etiket" >/dev/null
+  echo "$etiket"
+}
+
+kullanim() {
+  cat <<'KULLANIM'
+kullanım: guard/venus <komut>
+
+  durum      gece dalları, son iyi nokta, sağlık
+  saglik     temel testleri koştur
+  onayla     gece dalını birleştir, iyi nokta işaretle, GELISIM.md'ye yaz
+  reddet     gece dalını sil, sebebi backlog'a not düş
+  ertele     dala dokunma, yarın devam
+  geri-al    son bilinen iyi noktaya dön
+  baslat     sağlık kontrolü + gerekirse geri dönüş + Venüs'ü çalıştır
+KULLANIM
+}
+
+komut_durum() {
+  echo "kök        : $KOK"
+  echo "dal        : $(ana_dal)"
+  echo "son iyi    : $(son_iyi || echo 'yok')"
+  echo "diff sınırı: $DIFF_UST_SINIR satır"
+  local dallar; dallar="$(gece_dallari)"
+  if [ -z "$dallar" ]; then
+    echo "gece dalı  : yok"
+  else
+    echo "gece dalı  :"
+    while read -r d; do
+      [ -z "$d" ] && continue
+      local n; n="$(git diff --shortstat "$(ana_dal)...$d" 2>/dev/null | grep -oE '[0-9]+ (insertion|deletion)' | grep -oE '[0-9]+' | paste -sd+ | bc 2>/dev/null || echo 0)"
+      echo "             $d   ~${n:-0} satır"
+    done <<< "$dallar"
+  fi
+}
+
+komut_saglik() {
+  if [ ! -f "$KOK/smoke.py" ]; then
+    kirmizi "smoke.py yok — sağlık kontrolü yapılamıyor."; return 1
+  fi
+  echo "temel testler koşuyor…"
+  if python3 "$KOK/smoke.py" >/tmp/venus-saglik.log 2>&1; then
+    yesil "sağlık: geçti"; return 0
+  fi
+  kirmizi "sağlık: GEÇEMEDİ"
+  tail -15 /tmp/venus-saglik.log
+  return 1
+}
+
+dal_sec() {
+  local dallar; dallar="$(gece_dallari)"
+  [ -z "$dallar" ] && { sari "gece dalı yok."; return 1; }
+  if [ "$(wc -l <<< "$dallar")" -gt 1 ] && [ -z "${2:-}" ]; then
+    sari "birden fazla gece dalı var, birini seç:"; echo "$dallar"; return 1
+  fi
+  echo "${2:-$(head -1 <<< "$dallar")}"
+}
+
+komut_onayla() {
+  local bugun; bugun="$(date +%u)"
+  if [ "$ONAYLAMAMA_GUNU" != "0" ] && [ "$bugun" = "$ONAYLAMAMA_GUNU" ]; then
+    # Bölüm 18.6: en olası başarısızlık teknik değil insani — okumadan onay.
+    kirmizi "bugün onaylamama günü. hiçbir şey merge edilmez."
+    sari "birikmiş değişiklikleri oku: guard/venus durum"
+    return 1
+  fi
+
+  local dal; dal="$(dal_sec "$@")" || return 1
+  local ana; ana="$(ana_dal)"
+
+  # Bölüm 18.1 ve 18.5: asıl risk ajanın hatalı kod yazması değil, KENDİ
+  # DENETİM MEKANİZMASINI değiştirmesidir. guard/ ajanın dünyasının
+  # dışındadır — ona dokunan bir dal tartışmasız reddedilir. Bu kontrol
+  # diff sınırından önce gelir, çünkü sınırın kendisi guard/ içindedir.
+  local dokunulan; dokunulan="$(git diff --name-only "$ana...$dal" -- guard/)"
+  if [ -n "$dokunulan" ]; then
+    kirmizi "REDDEDİLDİ — bu dal guard/ dizinine dokunuyor:"
+    sed 's/^/    /' <<< "$dokunulan"
+    sari "guard/ ajanın yazma alanı dışındadır (Bölüm 18.1)."
+    sari "kendi sınırını değiştirebilen bir sistem, sınırlı değildir."
+    return 1
+  fi
+
+  local satir; satir="$(git diff --numstat "$ana...$dal" | awk '{e+=$1; s+=$2} END {print e+s+0}')"
+
+  echo "dal   : $dal"
+  echo "diff  : $satir satır (sınır $DIFF_UST_SINIR)"
+  if [ "$satir" -gt "$DIFF_UST_SINIR" ]; then
+    kirmizi "diff üst sınırı aşıldı — otomatik reddedildi."
+    sari "incelenemeyen değişiklik onaylanmış sayılmaz (Bölüm 18.4)."
+    return 1
+  fi
+
+  # Rapor gece DALINDA aranır: master'ın çalışma ağacında olmaması normaldir.
+  # Kanıt zorunluluğu Bölüm 18.4'ün karşı önlemlerinden biri.
+  if ! git ls-tree -r --name-only "$dal" -- raporlar/ 2>/dev/null | grep -q '\.md$'; then
+    sari "uyarı: bu dalda rapor yok — kanıtsız değişiklik onaylıyorsun."
+  fi
+
+  git merge --no-ff "$dal" -m "gece: $dal onaylandı" >/dev/null
+  if ! komut_saglik; then
+    kirmizi "merge sonrası sağlık geçmedi, geri alınıyor."
+    git reset --hard HEAD@{1} >/dev/null
+    return 1
+  fi
+
+  local ozet; ozet="$(git log -1 --format=%s "$dal")"
+  printf '%s · %s · %s satır · %s\n' "$(date +%Y-%m-%d)" "$dal" "$satir" "$ozet" \
+    >> "$KOK/GELISIM.md"
+  git add GELISIM.md && git commit -q -m "GELISIM: $dal" 
+  local etiket; etiket="$(iyi_isaretle)"
+  git branch -d "$dal" >/dev/null 2>&1 || git branch -D "$dal" >/dev/null
+  yesil "onaylandı · geri dönüş noktası: $etiket"
+}
+
+komut_reddet() {
+  local dal; dal="$(dal_sec "$@")" || return 1
+  local sebep="${3:-sebep yazılmadı}"
+  git branch -D "$dal" >/dev/null
+  printf -- '- [ ] reddedilen gece işi (%s): %s — %s\n' "$(date +%Y-%m-%d)" "$dal" "$sebep" \
+    >> "$KOK/backlog.md"
+  yesil "reddedildi · sebep backlog'a düşüldü"
+}
+
+komut_ertele() {
+  local dal; dal="$(dal_sec "$@")" || return 1
+  yesil "ertelendi · $dal duruyor, yarın devam edilebilir"
+}
+
+komut_geri_al() {
+  local etiket="${2:-$(son_iyi)}"
+  [ -z "$etiket" ] && { kirmizi "geri dönüş noktası yok."; return 1; }
+  sari "geri dönülüyor: $etiket"
+  git reset --hard "$etiket" >/dev/null
+  yesil "$etiket noktasına dönüldü"
+  git log -1 --format='  %h %s'
+}
+
+komut_baslat() {
+  if ! komut_saglik; then
+    # Bölüm 18.4: geçemezse otomatik olarak son iyi sürüme dön ve bilgilendir.
+    kirmizi "açılış sağlık kontrolü geçmedi."
+    local etiket; etiket="$(son_iyi)"
+    if [ -n "$etiket" ]; then
+      komut_geri_al "" "$etiket"
+      komut_saglik || { kirmizi "geri dönüşten sonra da geçmedi. elle bak."; return 1; }
+    else
+      kirmizi "geri dönüş noktası yok — başlatılmıyor."; return 1
+    fi
+  fi
+  exec python3 "$KOK/run.py"
+}
+
+case "${1:-}" in
+  durum)   komut_durum ;;
+  saglik)  komut_saglik ;;
+  onayla)  komut_onayla "$@" ;;
+  reddet)  komut_reddet "$@" ;;
+  ertele)  komut_ertele "$@" ;;
+  geri-al) komut_geri_al "$@" ;;
+  baslat)  komut_baslat ;;
+  ""|-h|--help|yardim) kullanim ;;
+  *) kirmizi "bilinmeyen komut: $1"; echo; kullanim; exit 1 ;;
+esac

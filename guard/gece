@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# VENÜS — gece döngüsü (şartname Bölüm 18.2)
+#
+# Üç dizin ayrımı (18.1):
+#   .        çalışan sürüm — ajan için salt okunur
+#   lab/     ajanın çalışma kopyası (git worktree) — tek yazabildiği yer
+#   guard/   bu dizin — ajanın erişimi yok
+#
+# Bu betik ajanı ÇAĞIRIR, ajan değildir. Görevi seçer, kopyayı hazırlar,
+# sınırları kurar, kanıt toplar, raporu yazar. Kod yazma işi ajanındır.
+
+set -euo pipefail
+
+GUARD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KOK="$(cd "$GUARD/.." && pwd)"
+# shellcheck source=/dev/null
+[ -f "$GUARD/ayar.conf" ] && source "$GUARD/ayar.conf"
+: "${DAL_ONEKI:=night}" "${DIFF_UST_SINIR:=400}" "${VENUS_AJAN:=}"
+
+cd "$KOK"
+kirmizi() { printf '\033[31m%s\033[0m\n' "$*"; }
+yesil()   { printf '\033[32m%s\033[0m\n' "$*"; }
+sari()    { printf '\033[33m%s\033[0m\n' "$*"; }
+
+BUGUN="$(date +%Y-%m-%d)"
+DAL="$DAL_ONEKI/$BUGUN"
+LAB="$KOK/lab"
+RAPOR="raporlar/$BUGUN.md"
+
+# --- 1. Gecede tek görev (18.4) -----------------------------------------
+mevcut="$(git branch --list "$DAL_ONEKI/*" --format='%(refname:short)')"
+if [ -n "$mevcut" ]; then
+  kirmizi "bekleyen gece dalı var — yeni koşu başlamaz:"
+  sed 's/^/    /' <<< "$mevcut"
+  sari "önce karar ver: guard/venus onayla | reddet | ertele"
+  exit 1
+fi
+
+# --- 2. Görev çekme (18.2) ----------------------------------------------
+# Açık uçlu "kendini geliştir" hedefi verilmez — yönsüz ajan iş uydurur.
+# Kullanıcıya atanmış maddeler atlanır.
+GOREV="$(grep -n '^- \[ \]' backlog.md | grep -v 'kullanıcı yapar' | head -1 || true)"
+if [ -z "$GOREV" ]; then
+  yesil "backlog'da ajana uygun açık madde yok. gece koşusu yapılmadı."
+  exit 0
+fi
+GOREV_SATIR="${GOREV%%:*}"
+GOREV_METIN="$(sed 's/^[0-9]*:- \[ \] //; s/\*\*//g' <<< "$GOREV" | cut -c1-90)"
+echo "görev  : $GOREV_METIN"
+echo "kaynak : backlog.md:$GOREV_SATIR"
+
+# --- 3. Çalışma kopyası (18.1) ------------------------------------------
+[ -e "$LAB" ] && { kirmizi "lab/ zaten var — temizle: git worktree remove lab"; exit 1; }
+git worktree add -q -b "$DAL" "$LAB" >/dev/null
+echo "kopya  : lab/  (dal: $DAL)"
+
+temizle() { git worktree remove --force "$LAB" 2>/dev/null || true; }
+
+# --- 4. Rapor iskeleti (18.2) -------------------------------------------
+mkdir -p "$LAB/raporlar"
+cat > "$LAB/$RAPOR" <<RAPOR
+# Gece raporu — $BUGUN
+
+## Görev
+$GOREV_METIN
+
+*(backlog.md:$GOREV_SATIR)*
+
+## Yaklaşım
+<!-- neden bu yol seçildi -->
+
+## Değişen dosyalar
+<!-- koşu sonunda doldurulur -->
+
+## Nasıl kanıtlandı
+<!-- test çıktısı, öncesi/sonrası davranış -->
+
+## Emin olmadıklarım
+<!-- gözden geçirilmesi gereken noktalar -->
+
+## Denenip vazgeçilenler
+<!-- hangi yol denendi, neden bırakıldı -->
+RAPOR
+
+# --- 5. Ajanı çağır ------------------------------------------------------
+if [ -z "$VENUS_AJAN" ]; then
+  sari "VENUS_AJAN tanımlı değil — ajan çağrılmadı."
+  sari "kopya ve rapor iskeleti hazır: lab/  ·  lab/$RAPOR"
+  sari "ajanı tanımlamak için: guard/ayar.conf"
+  exit 0
+fi
+
+ISTEK="$(cat <<ISTEK
+Sen VENÜS'ün gece vardiyasısın. Çalışma dizinin lab/ — yalnızca burada yazabilirsin.
+
+TEK GÖREV: $GOREV_METIN
+
+Kurallar (şartname Bölüm 18.5 — pazarlığa açık değil):
+- guard/ dizinine DOKUNMA. Okuma da yazma da yok.
+- kurallar.yaml, izin sistemi ve risk sınıfı tanımlarını değiştirme.
+- Kırmızı sınıf yetenek ekleme.
+- Kendi bütçe ve sınır ayarlarını değiştirme.
+- Dış ağa yazma: API çağrısı, mesaj, commit push — hiçbiri yok.
+- Toplam diff $DIFF_UST_SINIR satırı geçmesin. Geçen öneri otomatik reddedilir.
+- Başka madde alma. Bu tek görevi bitir.
+
+Bitirince lab/$RAPOR dosyasını doldur: yaklaşım, değişen dosyalar,
+NASIL KANITLADIĞIN (test çıktısı), emin olmadıkların, vazgeçtiğin yollar.
+python3 smoke.py çalışmalı.
+ISTEK
+)"
+
+echo "ajan   : $VENUS_AJAN"
+( cd "$LAB" && eval "$VENUS_AJAN" <<< "$ISTEK" ) || sari "ajan hata döndürdü — yine de kanıt toplanıyor."
+
+# --- 6. Kanıt topla ------------------------------------------------------
+cd "$LAB"
+echo; echo "kanıt toplanıyor…"
+{
+  echo
+  echo "## Otomatik kanıt"
+  echo
+  echo '```'
+  echo "\$ python3 smoke.py"
+  if python3 smoke.py 2>&1 | tail -30; then echo "(geçti)"; else echo "(GEÇEMEDİ)"; fi
+  echo '```'
+  echo
+  echo "### Değişen dosyalar"
+  echo '```'
+  git -C "$LAB" diff --stat HEAD 2>/dev/null || true
+  echo '```'
+} >> "$LAB/$RAPOR"
+
+git -C "$LAB" add -A
+git -C "$LAB" commit -q -m "gece $BUGUN: $GOREV_METIN" || sari "değişiklik yok, commit atlandı"
+
+# guard/ koruması: sabah onayı da reddeder ama burada söylemek daha erken.
+if git -C "$LAB" diff --name-only HEAD~1 HEAD -- guard/ 2>/dev/null | grep -q .; then
+  kirmizi "UYARI: ajan guard/ dizinine dokundu. Sabah onayı bunu reddedecek."
+fi
+
+cd "$KOK"
+temizle
+yesil "gece koşusu bitti · dal: $DAL"
+echo "sabah: guard/venus durum → onayla | reddet | ertele"

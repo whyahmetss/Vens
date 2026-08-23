@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 .venv/
+
+# gece vardiyasının çalışma kopyası (git worktree)
+lab/

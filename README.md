@@ -167,6 +167,40 @@ cache eşiğinin üstünde olduğu için arka arkaya cümlelerde girdi belirgin
 ucuzlar. Jeton sayıları `olaylar.jsonl`'a yazılır — maliyet tahmin edilmez,
 ölçülür: `log` komutuyla bakılır.
 
+## Gece vardiyası (Faz 8)
+
+Venüs kendi kodunu **çalışırken değiştirmez**. Ayrı bir kopyada çalışıp değişiklik
+önerir; onay senindir.
+
+```
+guard/gece            gece koşusu: backlog'dan TEK madde, lab/ kopyası, rapor
+guard/venus durum     bekleyen gece dalları, son geri dönüş noktası
+guard/venus onayla    birleştir, iyi nokta işaretle, GELISIM.md'ye yaz
+guard/venus reddet    dalı sil, sebebi backlog'a düş
+guard/venus ertele    dala dokunma
+guard/venus geri-al   son bilinen iyi noktaya dön
+guard/venus baslat    sağlık kontrolü + gerekirse geri dönüş + Venüs
+```
+
+`guard/` **ajanın yazma alanı dışındadır.** İzin ve sınır dosyaları orada durur.
+`guard/venus` saf bash + git'tir: `geri-al` Venüs açılmadığında da çalışmak
+zorundadır — sistemin bozulduğu an, tam olarak ona ihtiyaç duyulan andır.
+
+Korumalar (Bölüm 18.4-18.6), hepsi sınandı:
+
+- **guard/'a dokunan dal tartışmasız reddedilir.** Asıl risk ajanın hatalı kod
+  yazması değil, kendi denetim mekanizmasını değiştirmesidir.
+- **Diff üst sınırı** (varsayılan 400 satır) — incelenemeyen değişiklik
+  onaylanmış sayılmaz.
+- **Gecede tek görev.** Bekleyen dal varken yeni koşu başlamaz.
+- **Merge sonrası sağlık kontrolü.** Geçmezse birleştirme otomatik geri alınır.
+- **Onaylamama günü** (varsayılan pazar) — o gün hiçbir şey merge edilmez.
+  Bu döngünün en olası başarısızlığı teknik değil insani: raporu okumadan
+  onaylamaya başlamak.
+
+Ajanı sen tanımlarsın (`guard/ayar.conf` → `VENUS_AJAN`). Tanımlı değilse gece
+koşusu görevi seçer, kopyayı ve rapor iskeletini hazırlar, kod yazmaz.
+
 ## Sonraki adım
 
 Kod olarak sıradaki **Faz 3 — niyet çözücü**, ama önce iki şey gerekiyor:
