@@ -33,6 +33,7 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `kayit <id>` | tek kaydın tamamı |
 | `istatistik` | R ortalaması, win rate, setup dağılımı |
 | `eksik` | sonuçlanmamış ve zorunlu alanı boş kayıtlar |
+| `bildirimler` | bekleyen bildirimler ve günlük bütçe durumu |
 | `log [adet]` | son olaylar |
 | `temizle` | ekranı boşalt (kabukta çalışır, çekirdeğe gitmez) |
 
@@ -47,6 +48,7 @@ core/
   jurnal.py       işlem kaydı biçimi + jsonl depo
   niyet.py        serbest cümle → yetenek eşlemesi (Faz 3)
   model.py        görev başına model seçimi
+  bildirim.py     bildirim seviyeleri + günlük bütçe
   router.py       yönlendirme, risk kapısı, onay akışı
   log.py          jsonl olay günlüğü
   server.py       fastapi + websocket + kabuk servisi

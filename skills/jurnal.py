@@ -14,6 +14,7 @@ from core.registry import Risk, Perm, skill, satir, bilgi, uyari, vurgu
 from core import jurnal as depo
 from core import denetci
 from core import kurallar as kural_motoru
+from core.bildirim import Seviye, bildir
 
 AYLAR = ("Oca", "Şub", "Mar", "Nis", "May", "Haz",
          "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara")
@@ -68,6 +69,11 @@ async def _jurnal(arg):
 
     depo.yaz(kayit)
     denetci.kaydet(kayit, ihlaller)
+    for i in ihlaller:
+        # Bölüm 12: kural ihlali anı KRİTİK. Ama kullanıcı bu kaydı kendi
+        # girdi, uyarı zaten aşağıda görünüyor — kesinti değil, bütçeden
+        # düşmez. Kayda geçer ki `bildirimler` ve geçmiş eksik kalmasın.
+        bildir(Seviye.KRITIK, i.mesaj, f"jurnal:{kayit['id']}", kesintisiz=True)
 
     out = [bilgi(f"kaydedildi · {kayit['id']}"), satir(_baslik(kayit))]
     for note in coz.notlar:

@@ -13,10 +13,12 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 
 from . import log
+from . import bildirim
 from .router import yonlendir
 from .registry import hepsi
 
 UI = Path(__file__).resolve().parent.parent / "ui" / "index.html"
+
 
 app = FastAPI(title="VENÜS")
 
@@ -34,18 +36,49 @@ async def yetenekler():
             for s in hepsi()]
 
 
+async def _bildirim_pompasi(sock: WebSocket, kuyruk: asyncio.Queue) -> None:
+    """Bildirimleri kabuğa iter.
+
+    Ayrı bir görev, çünkü bildirim kullanıcının komutundan bağımsız gelir —
+    Venüs komut beklemeden konuşabilir (Bölüm 12).
+    """
+    while True:
+        b = await kuyruk.get()
+        # Rozet sayısı bildirimle birlikte gider: kuyruğa alınan bir bildirim
+        # ekranı bölmez ama rozetin o anda artması gerekir.
+        await sock.send_text(json.dumps({
+            "bildirim": True, "seviye": b.seviye, "durum": b.durum,
+            "saat": b.saat, "text": b.metin,
+            "rozet": len(bildirim.bekleyenler()),
+        }))
+
+
 @app.websocket("/ws")
 async def ws(sock: WebSocket):
     await sock.accept()
     oturum = uuid.uuid4().hex[:8]
     log.yaz("oturum", olay="acildi", oturum=oturum)
+
+    # Çekirdek bildirimi senkron üretir, websocket'e yazmak async. Araya
+    # kuyruk konur; bildirim üreten kod hiçbir zaman ağ için beklemez.
+    kuyruk: asyncio.Queue = asyncio.Queue()
+    bildirim.dinleyici_ekle(kuyruk.put_nowait)
+    pompa = asyncio.create_task(_bildirim_pompasi(sock, kuyruk))
+
     try:
+        # Açılışta bekleyen rozet sayısı gönderilir: kapalıyken biriken
+        # bildirimler kaybolmamalı.
+        await sock.send_text(json.dumps({"rozet": len(bildirim.bekleyenler())}))
         while True:
             mesaj = json.loads(await sock.receive_text())
             girdi = mesaj.get("cmd", "")
             for satir in await yonlendir(girdi, oturum):
                 await sock.send_text(json.dumps(satir))
                 await asyncio.sleep(0.015)
-            await sock.send_text(json.dumps({"bitti": True}))
+            await sock.send_text(json.dumps({"bitti": True,
+                                             "rozet": len(bildirim.bekleyenler())}))
     except WebSocketDisconnect:
         log.yaz("oturum", olay="kapandi", oturum=oturum)
+    finally:
+        bildirim.dinleyici_cikar(kuyruk.put_nowait)
+        pompa.cancel()

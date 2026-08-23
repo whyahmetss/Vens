@@ -58,6 +58,11 @@
   .row.warn{color:var(--warn)}
   .row.hi{color:var(--neon)}
   .row.echo{color:var(--gray)}
+  /* Bölüm 12: kesintili bildirim komut çıktısı değildir, öyle de görünmemeli. */
+  .row.bildirim{border-left:2px solid var(--neon);padding-left:9px;color:var(--neon)}
+  .row.bildirim.kritik{border-color:var(--warn);color:var(--warn)}
+  #rozet{color:var(--warn)}
+  #rozet:empty{display:none}
   .row.wake{font-family:'VT323',monospace;font-size:30px;color:var(--ink);
             margin:18px 0 6px;letter-spacing:.04em}
   .row.wake b{color:var(--neon);font-weight:400;text-shadow:0 0 18px rgba(0,255,65,.45)}
@@ -109,7 +114,7 @@
 
   <footer class="foot">
     <span id="hint">"yardim" — yetenek listesi</span>
-    <span id="count">0 yetenek</span>
+    <span><span id="rozet"></span><span id="count">0 yetenek</span></span>
   </footer>
 </div>
 
@@ -165,6 +170,13 @@ function baglan(){
   sock.onopen = ()=>{ durum(true); if(!hazir){ hazir = true; uyan(); } };
   sock.onmessage = e=>{
     const m = JSON.parse(e.data);
+    if(typeof m.rozet === 'number') rozetle(m.rozet);
+    if(m.bildirim){
+      // Komut beklemeden gelir; bekleme göstergesine dokunmaz.
+      if(m.durum === 'iletildi')
+        say(`${m.saat}  ${m.text}`, 'bildirim ' + m.seviye);
+      return;
+    }
     bekletme(false);
     if(m.bitti) return;
     say(m.text, m.cls || '');
@@ -176,6 +188,10 @@ function baglan(){
 fetch('/yetenekler').then(r=>r.json())
   .then(y=>document.getElementById('count').textContent = `${y.length} yetenek`)
   .catch(()=>{});
+
+function rozetle(n){
+  document.getElementById('rozet').textContent = n ? `${n} bildirim · ` : '';
+}
 
 /* --- girdi --- */
 const gecmis = []; let gi = -1;

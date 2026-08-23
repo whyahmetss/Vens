@@ -40,7 +40,7 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 
 - [ ] Bağlam panelleri
 - [ ] Command Center ekranı
-- [ ] Bildirim seviyeleri + günlük bütçe
+- [x] Bildirim seviyeleri + günlük bütçe
 - [ ] Açılış sekansı iyileştirme
 
 ## Faz 6 — trading taraması
