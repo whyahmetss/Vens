@@ -31,6 +31,7 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `jurnal <alan=değer>` | işlem kaydı ekle, kayıt anında kural denetimi |
 | `kayitlar [adet]` | son jurnal kayıtları |
 | `kayit <id>` | tek kaydın tamamı |
+| `tamamla <id> alan=değer` | açık pozisyonu kapat ya da kaydı düzelt |
 | `istatistik` | R ortalaması, win rate, setup dağılımı |
 | `eksik` | sonuçlanmamış ve zorunlu alanı boş kayıtlar |
 | `bildirimler` | bekleyen bildirimler ve günlük bütçe durumu |

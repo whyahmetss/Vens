@@ -152,21 +152,64 @@ def yaz(kayit: dict[str, Any]) -> dict[str, Any]:
     return kayit
 
 
-def hepsi() -> list[dict[str, Any]]:
+def duzelt(kimlik: str, veri: dict[str, Any]) -> dict[str, Any]:
+    """Var olan kaydı düzeltir — ama eskisini SİLMEZ.
+
+    Depo append-only kalır: düzeltme yeni bir satırdır. Jurnal olan biteni
+    tutar; "risk %5'ti, sonra %1 yazdım" bilgisi kaybolursa jurnal disiplin
+    aracı olmaktan çıkar. `hepsi()` okurken düzeltmeleri üstüne uygular ve
+    kaydın kaç kez düzeltildiğini işaretler.
+    """
+    kayit = {"duzeltme": kimlik,
+             "t": datetime.now().isoformat(timespec="seconds"), **veri}
+    with JURNAL.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
+    return kayit
+
+
+def _satirlar() -> list[dict[str, Any]]:
     if not JURNAL.exists():
         return []
-    kayitlar = []
+    out = []
     with JURNAL.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
                 continue
             try:
-                kayitlar.append(json.loads(line))
+                out.append(json.loads(line))
             except json.JSONDecodeError:
                 continue          # bozuk satır tüm jurnali kaybettirmemeli
-    kayitlar.sort(key=lambda k: k.get("islem_t", k.get("t", "")))
-    return kayitlar
+    return out
+
+
+def hepsi() -> list[dict[str, Any]]:
+    """Kayıtların GÜNCEL hâli: taban satırların üstüne düzeltmeler uygulanmış."""
+    kayitlar: dict[str, dict] = {}
+    sira: list[str] = []
+    duzeltmeler: dict[str, list[dict]] = {}
+
+    for k in _satirlar():
+        if "duzeltme" in k:
+            duzeltmeler.setdefault(str(k["duzeltme"]), []).append(k)
+        elif "id" in k:
+            kayitlar[k["id"]] = dict(k)
+            sira.append(k["id"])
+
+    for kimlik, liste in duzeltmeler.items():
+        hedef = kayitlar.get(kimlik)
+        if hedef is None:
+            continue              # sahibi olmayan düzeltme yok sayılır
+        for d in liste:
+            for alan, deger in d.items():
+                if alan not in ("duzeltme", "t"):
+                    hedef[alan] = deger
+        hedef["duzeltildi"] = len(liste)
+        hedef["duzeltme_t"] = liste[-1]["t"]
+
+    out = [kayitlar[i] for i in sira]
+    out.sort(key=lambda k: k.get("islem_t", k.get("t", "")))
+    return out
 
 
 def gun(tarih: date, kayitlar: list[dict] | None = None) -> list[dict[str, Any]]:

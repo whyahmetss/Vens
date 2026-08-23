@@ -21,6 +21,7 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 - [x] Kayıt anında kural denetimi
 - [x] `istatistik` — R ortalaması, win rate, setup dağılımı
 - [x] Eksik jurnal hatırlatması
+- [x] `tamamla` — açık pozisyonu kapatma / kayıt düzeltme (append-only)
 
 ## Faz 3 — niyet çözücü
 
