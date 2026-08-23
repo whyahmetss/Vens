@@ -27,11 +27,20 @@ async def main():
                 "kayitlar", "tamamla", "ihlaller", "istatistik", "eksik",
                 "bildirimler", "seans", "seviyeler", "bias", "merkez", "analiz", "review", "koc", "beyazliste", "izinler", "playbook",
                 "profil", "odaklar", "projeler", "gunaydin", "kapanis",
+                "hedefler", "hedef ingilizce_a2",
+                "kart ingilizce_a2 past_simple 'go' fiilinin 2. hâli = went",
+                "kartlar", "calis ingilizce_a2", "cevap went",
+                # Anahtar yoksa "kapalı" satırı basar — o da bir sınama.
+                "kart-uret ingilizce_a2 to_be 3",
                 "log 5", "zirva"]:
         out = await yonlendir(cmd, "smoke")
         print(f"\n$ {cmd}")
         for l in out[:6]:
             print("   ", _duz(l))
+
+    # Smoke arkasında açık çalışma oturumu bırakmasın.
+    from core import ogrenme
+    ogrenme.karti_kapat()
 
     k = kurallar.yukle()
     print(f"\n# kurallar  ({k.dosya.name}, okundu={k.okundu}, {len(k.tum())} kural)")

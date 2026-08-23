@@ -37,6 +37,16 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `proje-durum <durum>` | projenin durumunu değiştir |
 | `gunaydin` | sabah brifingi |
 | `kapanis` | gün kapanışı |
+| `hedefler` | hedefler, tempo ve kart sayıları |
+| `hedef <ad>` | tek hedefin müfredatı ve en zayıf kartların |
+| `unite <hedef> <ünite>` | üniteyi bitmiş işaretle |
+| `calis [hedef]` | çalışma oturumu — sıradaki kartı sorar |
+| `cevap <metin>` | açık karta cevabını ver |
+| `bildim` · `kolay` · `zor` · `bilemedim` | açık uçlu kartı kendin notla |
+| `kart <hedef> <ünite> <soru> = <cevap>` | kart ekle |
+| `kart-uret <hedef> <ünite> [adet]` | üniteye kart ürettir (model) |
+| `kartlar [hedef]` | kart havuzu |
+| `kart-sil <id>` | kartı sil |
 | `fiyat <sembol>` | canlı spot fiyat (`fiyat BTC`) |
 | `kurallar` | aktif kuralları ve kural dosyasındaki sorunları göster |
 | `playbook [setup]` | setup tanımları ve kontrol listeleri |
@@ -80,6 +90,9 @@ core/
   odak.py         çalışma seansları
   proje.py        projeler alanı
   jurnal.py       işlem kaydı biçimi + jsonl depo
+  ogrenme.py      aralıklı tekrar (SM-2) + kart deposu
+  hedef.py        hedefler, müfredat, tempo aritmetiği
+  ogretmen.py     kart üretici — modelin öğrenmedeki TEK işi
   niyet.py        serbest cümle → yetenek eşlemesi (Faz 3)
   model.py        görev başına model seçimi
   bildirim.py     bildirim seviyeleri + günlük bütçe
@@ -191,6 +204,52 @@ Odak seansları aktif projeye kendiliğinden bağlanır.
 killzone'ları, açık işler), `kapanis` kapatır (kaç işlem, net R, odak süresi,
 yarına kalanlar). Saatleri gelince NORMAL bildirim düşer — sessiz rozet, ekran
 bölme. Brifing bir hatırlatmadır, kesinti değil.
+
+## Öğrenme koçu
+
+Bir dil modeline soru sordurup cevabını yine ona değerlendirtmek öğretmek
+değildir; kendi ödevini kendi notlandıran bir şey, öğrenip öğrenmediğini
+ölçemez. Bu yüzden **modelin buradaki tek işi kart üretmek.** Üç şey
+deterministik kalır ve hiçbiri modele sorulmaz:
+
+1. **Ne zaman tekrar edileceği** — SM-2 algoritması. Bildiğin kart uzaklaşır
+   (1, 6, 15, 38, 95 gün…), bilemediğin yarın geri gelir.
+2. **Doğru olup olmadığı** — cevap anahtarı kartta saklı. Karşılaştırma metin
+   normalizasyonuyla; birden fazla kabul edilebilir cevap `|` ile ayrılır.
+   Model "bence yakın sayılır" diyemez.
+3. **Ne kadar bildiğin** — ilerleme "kaç ders izledin" değil, kaç kartın
+   **olgun** olduğu (tekrar aralığı 21 günü aşmış).
+
+**Hedefler `hedefler.yaml`'da** ve senin doldurman gereken bir dosya —
+oradaki müfredat benim varsayımım, kendi kursuna göre değiştir. İki tür var:
+
+| tür | ilerleme neyle ölçülür | alanlar |
+|---|---|---|
+| `unite` | kaç ünite bitti | `bitis`, `unite`, `gunluk_kart` |
+| `aliskanlik` | süreklilik ve toplam süre | `gunluk_dakika` |
+
+Her hedefin bitiş tarihi ve ölçülebilir bir ilerleme tanımı olmak zorunda;
+üçü birden olmayan bir hedef dilektir ve Venüs dilek takip etmez. `hedefler`
+gereken hız ile fiili hızı yan yana koyar — "iyi gidiyorsun" demez, farkı söyler.
+
+**Döngü:**
+
+```
+calis                 sıradaki kartı sorar, cevabı GÖSTERMEZ
+cevap <metin>         deterministik denetim → notlanır → sonraki kart
+bildim / zor / ...    yalnızca açık uçlu kartta, yalnızca cevabı yazdıktan sonra
+```
+
+Cevabı görmeden not vermek öğrenme değil, kendini kandırmadır — `bildim`
+denemeden çalışmaz.
+
+**`kart-uret`** bir ünite için model kartları üretir; her kart cevabıyla
+kaydedilir, böylece o kart bundan sonra her karşına çıktığında değerlendirme
+yine deterministiktir. Model kartları `kartlar` listesinde `[model]` işaretiyle
+görünür ve **ilk sorulduklarında** "cevap yanlışsa `kart-sil <id>`" satırı
+düşer: yanlış cevaplı üretilmiş bir kart, doğru bildiğini yanlış sayarak
+denetçiyi zehirler. `VENUS_OGRETMEN=kapali` yalnızca üretimi kapatır —
+motor modele bağımlı değil, kart elle eklenmeye devam eder.
 
 ## Analiz
 
@@ -328,6 +387,7 @@ Tek bir "Venüs modeli" yok — her LLM görevi kendi modelini seçer, tablo
 | görev | varsayılan | ne yapar |
 |---|---|---|
 | `niyet` | `claude-opus-5` | serbest cümleyi kapalı yetenek listesine eşler |
+| `ogretmen` | `claude-opus-5` | müfredat ünitesinden çalışma kartı üretir |
 
 Değiştirmek için tabloyu düzenle, ya da denemek için:
 

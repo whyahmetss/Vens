@@ -25,7 +25,26 @@ GOREVLER: dict[str, str] = {
     # Serbest cümleyi kapalı bir yetenek listesine eşler. Türkçe devrik cümle
     # ve yazım hatası isabeti doğrudan bu modelin işi.
     "niyet": "claude-opus-5",
+
+    # Müfredat ünitesinden çalışma kartı üretir. Ürettiği kart cevabıyla
+    # saklanır; değerlendirme modele hiç dönmez, deterministik kalır.
+    "ogretmen": "claude-opus-5",
 }
+
+
+def hazir() -> tuple[bool, str]:
+    """Modele çağrı yapılabilir mi? Döner: (evet_mi, olumsuzsa sebebi).
+
+    Paket ve anahtar denetimi her LLM görevi için aynı; görevin kendi
+    açma/kapama anahtarı çağıran modülde kalır.
+    """
+    try:
+        import anthropic  # noqa: F401
+    except ImportError:
+        return False, "anthropic paketi kurulu değil (pip install -r requirements.txt)"
+    if not os.environ.get("ANTHROPIC_API_KEY", "").strip():
+        return False, "ANTHROPIC_API_KEY tanımlı değil"
+    return True, ""
 
 
 def sec(gorev: str) -> str:

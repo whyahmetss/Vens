@@ -66,29 +66,19 @@ def model() -> str:
     return model_secimi.sec(GOREV)
 
 
+def _elle_kapali() -> bool:
+    return os.environ.get("VENUS_NIYET", "").strip().lower() in ("kapali", "kapalı", "0")
+
+
 def acik_mi() -> bool:
     """Anahtar yoksa ya da elle kapatıldıysa niyet çözücü devre dışıdır."""
-    if os.environ.get("VENUS_NIYET", "").strip().lower() in ("kapali", "kapalı", "0"):
-        return False
-    if not os.environ.get("ANTHROPIC_API_KEY", "").strip():
-        return False
-    try:
-        import anthropic  # noqa: F401
-    except ImportError:
-        return False
-    return True
+    return not _elle_kapali() and model_secimi.hazir()[0]
 
 
 def neden_kapali() -> str:
-    if os.environ.get("VENUS_NIYET", "").strip().lower() in ("kapali", "kapalı", "0"):
+    if _elle_kapali():
         return "niyet çözücü kapalı (VENUS_NIYET)"
-    try:
-        import anthropic  # noqa: F401
-    except ImportError:
-        return "anthropic paketi kurulu değil (pip install -r requirements.txt)"
-    if not os.environ.get("ANTHROPIC_API_KEY", "").strip():
-        return "ANTHROPIC_API_KEY tanımlı değil"
-    return "niyet çözücü kapalı"
+    return model_secimi.hazir()[1] or "niyet çözücü kapalı"
 
 
 def araclar() -> tuple[list[dict], list[str]]:

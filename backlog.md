@@ -88,6 +88,17 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 - [ ] **Finans alanı** — Bölüm 7'nin saydığı dördüncü alan, hiç yok
 - [ ] Odak ↔ jurnal bağı — trading seansı da bir odak seansı mı?
 
+## Öğrenme koçu *(hedef: 1 ayda İngilizce A2, 2 ayda ICT mentorship)*
+
+- [x] Aralıklı tekrar motoru — SM-2, deterministik cevap denetimi (`core/ogrenme.py`)
+- [x] Hedefler ve tempo — gereken hız ↔ fiili hız (`core/hedef.py`, `hedefler.yaml`)
+- [x] Çalışma oturumu — `calis` / `cevap`; denemeden not vermek engellendi
+- [x] Kart üretici — modelin tek işi kart yazmak, değerlendirme ona dönmez
+- [x] Model kartı işareti — `[model]` + ilk sorulduğunda "cevap yanlışsa sil"
+- [ ] **Müfredatı gerçek kursuna göre doldur** — `hedefler.yaml`'daki üniteler varsayım
+- [ ] Bir hafta gerçekten kullan — tempo ve olgunluk ancak o zaman bir şey söyler
+- [ ] Odak seansı ↔ çalışma oturumu bağı: `calis` bir odak seansı sayılmalı mı?
+
 ## Fikirler *(sıralanmamış, faz atanmamış)*
 
 -
