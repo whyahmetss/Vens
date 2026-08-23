@@ -34,6 +34,7 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `kayit <id>` | tek kaydın tamamı |
 | `tamamla <id> alan=değer` | açık pozisyonu kapat ya da kaydı düzelt |
 | `istatistik` | R ortalaması, win rate, setup dağılımı |
+| `analiz [görünüm]` | setup/seans/sembol/RR kırılımı, tekrarlanan davranışlar |
 | `eksik` | sonuçlanmamış ve zorunlu alanı boş kayıtlar |
 | `bildirimler` | bekleyen bildirimler ve günlük bütçe durumu |
 | `seans` | killzone saatleri ve şu an açık olan seans |
@@ -58,6 +59,7 @@ core/
   denetci.py      kural ihlali denetleyicisi (deterministik)
   playbook.py     setup tanımları + kontrol listeleri
   karne.py        uyum karnesi ve kalite skoru
+  analiz.py       kırılımlar + tekrarlanan davranış analizi
   jurnal.py       işlem kaydı biçimi + jsonl depo
   niyet.py        serbest cümle → yetenek eşlemesi (Faz 3)
   model.py        görev başına model seçimi
@@ -145,6 +147,42 @@ bir değer yok sayılır ve `playbook` uyarır.
 
 **Venüs grafiği göremez.** "liquidity_sweep ✓" onun doğrulaması değil, senin
 beyanın. Değeri şuradan gelir: beyanı sonucu bilmeden verirsin ve kilitlenir.
+
+## Analiz
+
+`istatistik` "ne oldu" der. `analiz` "neden oldu ve tekrar mı ediyor" der:
+
+```
+SEANS
+  new_york_am    21 işlem   +27.8R   ort +1.32R   %86
+  asya            9 işlem    -8.0R   ort -0.89R   %0
+
+KALİTE SKORU → SONUÇ
+  90 – 100       18 işlem   +26.9R   ort +1.49R   %83
+  0 – 49          9 işlem    -8.0R   ort -0.89R   %0
+  → fark         90-100 ile 0-49 arası +2.38R/işlem
+
+TEKRARLANAN DAVRANIŞLAR
+  fomo (senin etiketin)              9x   0K / 9Z   -8.0R
+  izinli_seanslar (denetçi yakaladı) 9x   0K / 9Z   -8.0R
+  → zararlı davranışların birleşik etkisi  -9.1R  (20 işlem)
+```
+
+Görünümler: `analiz setup | seans | sembol | rr | skor | hata`
+
+Üç şeye dikkat:
+
+**Kalite skoru → sonuç kırılımı**, playbook'un gerçekten bir şey ölçüp
+ölçmediğinin tek objektif kanıtıdır. Yüksek skorlu işlemler daha iyi sonuç
+vermiyorsa kontrol listeni gözden geçirmen gerekir — Venüs bunu söyler.
+
+**Davranışların R'leri toplanmaz.** Tek bir kötü işlem hem "fomo" hem "izinli
+olmayan seans" hem "risk aşımı" olabilir; satırları toplarsan aynı zararı üç kez
+sayarsın. Birleşik etki, o davranışlardan en az birinin görüldüğü işlemlerin
+toplamıdır.
+
+**Az örnek istatistik değildir.** 5 işlemin altındaki gruplar gösterilir ama
+"en iyi / en kötü" sıralamasına girmez.
 
 ## Geçmiş yeniden yazılamaz
 

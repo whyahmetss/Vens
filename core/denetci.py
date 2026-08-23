@@ -188,7 +188,13 @@ def kaydet(kayit: dict[str, Any], ihlaller: list[Ihlal]) -> None:
             kurallar=[i.kural for i in ihlaller])
 
 
+def hepsi() -> list[dict[str, Any]]:
+    """Tüm ihlaller. Analiz katmanı bunu kayıt id'si üzerinden jurnalle birleştirir."""
+    return oku(0)
+
+
 def oku(n: int = 20) -> list[dict[str, Any]]:
+    """Son n ihlal. n=0 ise hepsi."""
     if not IHLALLER.exists():
         return []
     kayitlar = []
@@ -201,4 +207,4 @@ def oku(n: int = 20) -> list[dict[str, Any]]:
                 kayitlar.append(json.loads(line))
             except json.JSONDecodeError:
                 continue
-    return kayitlar[-n:]
+    return kayitlar if n <= 0 else kayitlar[-n:]
