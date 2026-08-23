@@ -113,7 +113,17 @@ async def _merkez(arg):
         out.append(alan("seans", f"● {ad}", "acik"))
     if semboller:
         out.append(alan("son işlenen", ", ".join(semboller)))
-    else:
+    try:
+        from skills.izleme import acik_seviyeler, son_bias
+        sev = acik_seviyeler()
+        if sev:
+            out.append(alan("izlenen seviye", f"{len(sev)}"))
+        # Bias kullanıcının kendi tezidir; Venüs üretmez, gösterir (Değişmez 4).
+        for sembol, b in list(son_bias().items())[:3]:
+            out.append(alan(f"bias {sembol}", b["yon"]))
+    except Exception:
+        pass
+    if not semboller:
         out.append(bilgi("jurnal boş — izlenecek sembol yok"))
 
     # --- son aktiviteler ---

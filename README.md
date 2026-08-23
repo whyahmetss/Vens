@@ -36,6 +36,9 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `bildirimler` | bekleyen bildirimler ve günlük bütçe durumu |
 | `seans` | killzone saatleri ve şu an açık olan seans |
 | `merkez` | Command Center ekranı (ESC ile kapanır) |
+| `seviye <sembol> <fiyat>` | izlenecek fiyat seviyesi işaretle |
+| `seviyeler` | işaretli seviyeler |
+| `bias <sembol> <yön>` | kendi HTF bias notun |
 | `log [adet]` | son olaylar |
 | `temizle` | ekranı boşalt (kabukta çalışır, çekirdeğe gitmez) |
 
