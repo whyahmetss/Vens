@@ -40,10 +40,10 @@ Açık uçlu "kendini geliştir" hedefi verilmez — kaynak bu dosyadır.
 
 ## Faz 5 — arayüz
 
-- [ ] Bağlam panelleri
-- [ ] Command Center ekranı
+- [x] Bağlam panelleri — bağlam şeriti, söylenecek şey varsa belirir
+- [x] Command Center ekranı — `merkez`, ESC ile kapanır
 - [x] Bildirim seviyeleri + günlük bütçe
-- [ ] Açılış sekansı iyileştirme
+- [x] Açılış sekansı iyileştirme — satırlar gerçek durumu ölçer
 
 ## Faz 6 — trading taraması
 

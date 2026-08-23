@@ -27,9 +27,8 @@ import json
 from dataclasses import dataclass, asdict
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, Callable
 
-from . import log
+from . import kanal, log
 from .log import VERI
 
 BILDIRIMLER = VERI / "bildirimler.jsonl"
@@ -64,20 +63,6 @@ class Bildirim:
         return self.durum in ("kuyrukta", "kayitli")
 
 
-# Kabuk köprüsü kendini buraya kaydeder. Çekirdek taşımayı bilmez, yalnızca
-# kararı verir — kime nasıl gideceği köprünün işi (Değişmez 6).
-_DINLEYICILER: list[Callable[[Bildirim], Any]] = []
-
-
-def dinleyici_ekle(fn: Callable[[Bildirim], Any]) -> None:
-    _DINLEYICILER.append(fn)
-
-
-def dinleyici_cikar(fn: Callable[[Bildirim], Any]) -> None:
-    if fn in _DINLEYICILER:
-        _DINLEYICILER.remove(fn)
-
-
 def bildir(seviye: Seviye, metin: str, kaynak: str,
            kesintisiz: bool = False) -> Bildirim:
     """Bildirimi kaydeder ve gerekiyorsa iletir.
@@ -91,7 +76,7 @@ def bildir(seviye: Seviye, metin: str, kaynak: str,
         durum = "log"                         # Bölüm 12: sadece log, rozet bile değil
     elif kesintisiz or seviye is Seviye.NORMAL:
         durum = "kayitli"                     # rozet; kendiliğinden bölmez
-    elif not _DINLEYICILER:
+    elif not kanal.acik():
         # Açık kabuk yok: kimse bölünmedi. Bütçeyi burada harcamak, kullanıcı
         # ekrana geldiğinde hakkını yemek olurdu — kuyruğa alınır, rozette durur.
         durum = "kuyrukta"
@@ -105,15 +90,11 @@ def bildir(seviye: Seviye, metin: str, kaynak: str,
     _yaz(b)
     log.yaz("bildirim", seviye=b.seviye, kaynak=kaynak, durum=durum, metin=metin)
 
-    # Dinleyici "log" dışında her şeyi görür. Ekranı bölmek mi rozeti
-    # artırmak mı gerektiğine köprü `durum`a bakarak karar verir; çekirdek
-    # kararı verir, taşımayı bilmez (Değişmez 6).
+    # Kabuk "log" dışında her şeyi görür. Ekranı bölmek mi rozeti artırmak mı
+    # gerektiğine köprü `durum`a bakarak karar verir.
     if durum != "log":
-        for fn in list(_DINLEYICILER):
-            try:
-                fn(b)
-            except Exception as e:      # bir kabuk düşerse diğerleri etkilenmesin
-                log.yaz("bildirim", olay="iletilemedi", hata=repr(e))
+        kanal.yayinla({"bildirim": True, "seviye": b.seviye, "durum": b.durum,
+                       "saat": b.saat, "text": b.metin})
     return b
 
 

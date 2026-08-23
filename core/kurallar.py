@@ -212,11 +212,24 @@ def yukle(dosya: str | Path | None = None) -> Kurallar:
     return _bitir(yol, bolumler, sorunlar, okundu=True)
 
 
+# Son loglanan sonucun parmak izi. Dosya her komutta yeniden okunuyor
+# (önbellek yok, bu bilinçli) ama her okumayı loglamak olay günlüğünü boğar
+# ve asıl olayları görünmez kılar.
+_SON_IZ: str | None = None
+
+
 def _bitir(yol: Path, bolumler: dict, sorunlar: list[Sorun], *, okundu: bool) -> Kurallar:
-    # Değişmez 7: her şey loglanır. Bozuk kural dosyası ileride "neden ihlal
-    # yakalanmadı" sorusunun cevabı olacak, kayda geçmeli.
-    log.yaz("kurallar", olay="yuklendi", dosya=str(yol), okundu=okundu,
-            kural=sum(len(a) for a in bolumler.values()),
-            sorun=[str(s) for s in sorunlar])
+    global _SON_IZ
+    kural = sum(len(a) for a in bolumler.values())
+    iz = f"{okundu}|{kural}|{[str(s) for s in sorunlar]}"
+
+    # Değişmez 7: her şey loglanır — ama "aynı şey" tekrar tekrar değil.
+    # Bozuk kural dosyası ileride "neden ihlal yakalanmadı" sorusunun cevabı
+    # olacak; o cevap için sonucun DEĞİŞTİĞİ an yeterlidir.
+    if iz != _SON_IZ:
+        _SON_IZ = iz
+        log.yaz("kurallar", olay="yuklendi", dosya=str(yol), okundu=okundu,
+                kural=kural, sorun=[str(s) for s in sorunlar])
+
     return Kurallar(dosya=yol, bolumler=bolumler,
                     sorunlar=tuple(sorunlar), okundu=okundu)

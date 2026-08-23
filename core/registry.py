@@ -94,3 +94,12 @@ def baslik(t: str) -> dict:
 
 def bosluk() -> dict:
     return {"bosluk": True}
+
+
+def ekran(ad: str) -> dict:
+    """Bu yanıt akışa değil, çağrılınca açılan ayrı bir ekrana yazılsın.
+
+    Sunum ipucudur, sunum kararı değil — `cls` gibi. Ekranın neye benzediğine
+    kabuk karar verir (Bölüm 13: Command Center çağrılınca açılır).
+    """
+    return {"ekran": ad}

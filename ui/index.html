@@ -30,7 +30,7 @@
   .veil::after{content:'';position:absolute;inset:0;
     background:radial-gradient(ellipse at 50% 40%,transparent 50%,rgba(0,0,0,.75) 100%)}
 
-  .shell{height:100%;display:grid;grid-template-rows:auto 1fr auto;
+  .shell{height:100%;display:grid;grid-template-rows:auto auto 1fr auto;
          gap:12px;padding:16px;max-width:1180px;margin:0 auto}
 
   /* --- üst ray: minimal (Bölüm 13) --- */
@@ -192,6 +192,34 @@
   .bolum:first-child{margin-top:0}
   .ara{height:10px}
 
+  /* --- bağlam şeriti: söylenecek bir şey varsa belirir (Bölüm 13) --- */
+  .serit{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .serit:empty{display:none}
+  .cip{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);
+       border:1px solid var(--rule);border-radius:2px;padding:3px 9px}
+  .cip.acik{color:var(--neon);border-color:rgba(0,255,65,.45)}
+  .cip.uyari{color:var(--warn);border-color:rgba(255,176,58,.45)}
+
+  /* --- Command Center: ayrı ekran, çağrılınca açılır --- */
+  .merkez{position:fixed;inset:0;z-index:70;padding:26px;overflow:auto;
+          background:rgba(4,6,4,.93);backdrop-filter:blur(9px);
+          animation:merkezAc .22s ease-out both}
+  .merkez[hidden]{display:none}
+  @keyframes merkezAc{from{opacity:0;transform:scale(.99)}to{opacity:1;transform:none}}
+  .merkez .tepe{display:flex;justify-content:space-between;align-items:baseline;
+                max-width:1180px;margin:0 auto 18px;padding-bottom:12px;
+                border-bottom:1px solid var(--rule)}
+  .merkez .tepe h2{font-family:'VT323',monospace;font-size:30px;font-weight:400;
+                   letter-spacing:.12em;color:var(--ink)}
+  .merkez .tepe .kapat{font-size:10px;letter-spacing:.18em;color:var(--gray)}
+  .merkez .izgara{max-width:1180px;margin:0 auto;display:grid;gap:12px;
+                  align-items:start;
+                  grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+  .kart{border:1px solid var(--rule);border-radius:3px;padding:12px 14px;
+        background:linear-gradient(180deg,rgba(255,255,255,.032),rgba(255,255,255,.006))}
+  .kart > .bolum{margin-top:0}
+  .kart .alan{grid-template-columns:minmax(88px,116px) 1fr;gap:8px 12px}
+
   /* --- yumuşak geçişler: satırlar belirir, çakmaz --- */
   .row{animation:gir .2s ease-out both}
   @keyframes gir{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
@@ -222,6 +250,14 @@
 </head>
 <body>
 <div class="veil"><div class="tarama"></div></div>
+
+<div class="merkez" id="merkez" hidden>
+  <div class="tepe">
+    <h2>COMMAND CENTER</h2>
+    <span class="kapat">ESC — KAPAT</span>
+  </div>
+  <div class="izgara" id="merkezIzgara"></div>
+</div>
 
 <div class="shell">
   <span class="kose su"></span><span class="kose sag-u"></span>
@@ -256,6 +292,8 @@
       </svg>
     </div>
   </header>
+
+  <div class="serit" id="serit"></div>
 
   <main class="flow" id="flow">
     <div class="ask" id="ask" hidden>
@@ -325,9 +363,13 @@ function kur(cls, text, ham=false){
   return el;
 }
 function ekle(el, hedef){
-  if(hedef){ hedef.appendChild(el); panelSatir++; }
-  else flow.insertBefore(el, ask);
-  flow.scrollTop = flow.scrollHeight;
+  if(hedef){
+    hedef.appendChild(el);
+    if(hedef === panelGovde) panelSatir++;
+  } else {
+    flow.insertBefore(el, ask);
+    flow.scrollTop = flow.scrollHeight;
+  }
   return el;
 }
 
@@ -386,8 +428,12 @@ function baglan(){
       if(m.durum === 'iletildi') bildirimGoster(m);
       return;
     }
+    if(typeof m.baglam !== 'undefined') seritCiz(m.baglam);
+    if(m.acilis) acilisSatirlari = m.acilis;
     bekletme(false);
-    if(m.bitti){ paneliKapat(); return; }
+    if(m.ekran){ ekranModu = m.ekran; merkeziAc(); paneliKapat(); return; }
+    if(m.bitti){ ekranModu = null; paneliKapat(); return; }
+    if(ekranModu){ merkezSatir(m); return; }
     cizSatir(m, panelGovde);
   };
   sock.onclose = ()=>{ durum(false); setTimeout(baglan, 2500); };
@@ -400,6 +446,41 @@ fetch('/yetenekler').then(r=>r.json())
 
 function rozetle(n){
   document.getElementById('rozet').textContent = n ? `${n} bildirim · ` : '';
+}
+
+/* --- bağlam şeriti: boşsa hiç görünmez (Bölüm 13, varsayılan minimal) --- */
+const serit = document.getElementById('serit');
+function seritCiz(cipler){
+  serit.textContent = '';
+  (cipler || []).forEach(c=>serit.appendChild(kur('cip ' + (c.tur || ''), buyuk(c.metin))));
+}
+
+/* --- Command Center: ayrı ekran, çağrılınca açılır --- */
+const merkez = document.getElementById('merkez');
+const merkezIzgara = document.getElementById('merkezIzgara');
+let merkezKart = null;
+function merkeziAc(){
+  merkezIzgara.textContent = '';
+  merkezKart = null;
+  merkez.hidden = false;
+}
+function merkeziKapat(){ merkez.hidden = true; line.focus(); }
+merkez.addEventListener('click', e=>{ if(e.target === merkez) merkeziKapat(); });
+addEventListener('keydown', e=>{ if(e.key === 'Escape' && !merkez.hidden) merkeziKapat(); });
+
+/* Her başlık yeni bir kart açar; ızgara kartları kendisi yerleştirir. */
+function merkezSatir(m){
+  if(m.baslik){
+    merkezKart = kur('kart', '');
+    merkezKart.appendChild(kur('bolum', buyuk(m.baslik)));
+    merkezIzgara.appendChild(merkezKart);
+    return;
+  }
+  if(!merkezKart){
+    merkezKart = kur('kart', '');
+    merkezIzgara.appendChild(merkezKart);
+  }
+  cizSatir(m, merkezKart);
 }
 
 /* Açılış sekansı sürerken gelen bildirim animasyonun ortasına düşmemeli;
@@ -416,7 +497,7 @@ function bildirimGoster(m){
 /* --- yanıt paneli ---------------------------------------------------
    Her komut kendi kartına yazılır. Akan tek bir metin sütunu terminaldir;
    panel, çıktının nereye ait olduğunu göz seviyesinde ayırır (Bölüm 13). */
-let panel = null, panelGovde = null, panelSatir = 0;
+let panel = null, panelGovde = null, panelSatir = 0, ekranModu = null;
 function paneliAc(komut){
   paneliKapat();
   panel = kur('panel', '');
@@ -557,14 +638,23 @@ function seslendir(metin){
 }
 
 /* --- uyanış --- */
+let acilisSatirlari = null;
 async function uyan(){
   cekirdekDurum('uyaniyor', true);
   await typeOut('çekirdek başlatılıyor', 'dim', 22);
-  await pause(160);
-  for(const p of ['yetenek kayıt defteri','olay günlüğü','köprü']){
-    say(`  ${p}`, 'dim'); await pause(110);
+  await pause(200);
+  // Satırlar çekirdekten gelir ve o an gerçekten ölçülmüş durumu söyler;
+  // uydurulmuş bir yükleme çubuğu değildir.
+  const satirlar = acilisSatirlari ||
+    [{ad:'köprü', deger:'bağlı'}];
+  for(const s of satirlar){
+    const el = say(`  ${s.ad}`, 'dim');
+    await pause(130);
+    el.textContent = `  ${s.ad.padEnd(22, ' ')}${s.deger}`;
+    if(s.uyari) el.className = 'row warn';
+    await pause(90);
   }
-  await pause(260);
+  await pause(280);
   cekirdekDurum('uyaniyor', false);
   say('VENÜS <b>hazır</b>', 'wake');
   acilisBitti = true;

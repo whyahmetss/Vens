@@ -35,6 +35,7 @@ Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bk
 | `eksik` | sonuçlanmamış ve zorunlu alanı boş kayıtlar |
 | `bildirimler` | bekleyen bildirimler ve günlük bütçe durumu |
 | `seans` | killzone saatleri ve şu an açık olan seans |
+| `merkez` | Command Center ekranı (ESC ile kapanır) |
 | `log [adet]` | son olaylar |
 | `temizle` | ekranı boşalt (kabukta çalışır, çekirdeğe gitmez) |
 
@@ -52,6 +53,7 @@ core/
   bildirim.py     bildirim seviyeleri + günlük bütçe
   zamanlayici.py  periyodik kontrol çalıştırıcısı
   sembol.py       konuşma tanıma sembol düzeltmesi
+  kanal.py        kabuğa itme kanalı (bildirim + bağlam)
   router.py       yönlendirme, risk kapısı, onay akışı
   log.py          jsonl olay günlüğü
   server.py       fastapi + websocket + kabuk servisi
