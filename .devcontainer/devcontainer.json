@@ -1,0 +1,30 @@
+{
+  "name": "VENÜS",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+
+  "postCreateCommand": "pip install --user -r requirements.txt",
+
+  // Venüs 127.0.0.1'e bağlı KALIR (Değişmez 5). Codespaces'in port
+  // yönlendirmesi konteynerin içinden bağlandığı için bu yeterli; sayfa
+  // internete açılmaz, GitHub hesabınla kimlik doğrulaması ister.
+  "forwardPorts": [8712],
+  "portsAttributes": {
+    "8712": {
+      "label": "VENÜS kabuğu",
+      "onAutoForward": "openBrowser",
+      "visibility": "private"
+    }
+  },
+
+  "containerEnv": {
+    // Veri konteynerin ev dizininde değil, repo içinde durur. Codespace
+    // silindiğinde jurnalin gitmesin diye: `./yedek` ile commit'lenebilir.
+    "VENUS_VERI": "${containerWorkspaceFolder}/veri"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"]
+    }
+  }
+}

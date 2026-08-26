@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Veriyi GitHub'a kaydet.
+#
+# Codespaces'te çalışıyorsan bulut bilgisayar bir süre kullanılmazsa GitHub
+# onu siler — jurnalin ve kartların da onunla gider. Bunu çalıştırdığında
+# kayıtlar repoya yazılır ve silinmeden kurtulur.
+#
+#     ./yedek
+#
+# Repo özel (private). Yine de trade günlüğünün GitHub'da durmasını
+# istemiyorsan `veri/` satırını .gitignore'a ekle ve bunu kullanma.
+
+set -euo pipefail
+cd "$(dirname "$0")"
+
+VERI="${VENUS_VERI:-veri}"
+
+if [ ! -d "$VERI" ]; then
+    echo "veri dizini yok: $VERI"
+    echo "Venüs'ü hiç çalıştırmadıysan kaydedilecek bir şey de yoktur."
+    exit 0
+fi
+
+# Depo içinde değilse commit'lenemez; kullanıcı VENUS_VERI'yi başka yere
+# çevirmiş olabilir, sessizce yanlış şey yedeklemektense söyle.
+case "$(realpath "$VERI")" in
+    "$(realpath .)"/*) ;;
+    *) echo "veri repo dışında: $VERI"
+       echo "elle yedekle ya da VENUS_VERI'yi repo içine çevir."
+       exit 1 ;;
+esac
+
+git add -- "$VERI"
+
+if git diff --cached --quiet -- "$VERI"; then
+    echo "değişen kayıt yok."
+    exit 0
+fi
+
+ozet="$(git diff --cached --numstat -- "$VERI" | awk '{t+=$1} END {print t+0}')"
+git commit -q -m "veri: $(date +%Y-%m-%d) · $ozet yeni satır"
+
+# Ağ yoksa commit atılmış ama GitHub'a gitmemiş olur. Sessizce başarısız
+# olursa yedeklendiğini sanırsın; söylenmesi gereken şey tam olarak bu.
+if git push -q 2>/dev/null; then
+    echo "kaydedildi · $ozet yeni satır"
+else
+    echo "commit atıldı ($ozet yeni satır) ama GitHub'a GÖNDERİLEMEDİ."
+    echo "ağ gelince: git push"
+    exit 1
+fi

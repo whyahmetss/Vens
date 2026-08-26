@@ -1,8 +1,18 @@
 # VENÜS
 
-Kişisel AI çalışma ortamı. Faz 0 (iskelet, köprü, olay günlüğü), Faz 1 (kurallar ve
-ihlal denetleyicisi) ve Faz 2'nin (jurnal) **kodu** yazıldı.
-Henüz yapay zekâ yok — o Faz 3'te (niyet çözücü) geliyor. Şu an deterministik bir kabuk.
+Kişisel AI çalışma ortamı. Tek kullanıcı, kendi makinende, `127.0.0.1`.
+
+Faz 0–8'in **kodu** yazıldı: kurallar ve ihlal denetleyicisi, jurnal, uyum
+karnesi, analiz, review, koç, profil, odak, projeler, brifing, öğrenme koçu,
+ses, beyaz listeli bilgisayar kontrolü, gece vardiyası. Fazların **bitiş
+kriterleri** sağlanmadı — hepsi gerçek kullanım istiyor.
+
+Nerede kalındığı, neyin doğrulanmadığı ve senin doldurman gerekenler:
+**[docs/DURUM.md](docs/DURUM.md)**.
+
+Yapay zekâ iki yerde ve ikisi de sınırlı: serbest cümleyi yeteneğe eşlemek
+(Faz 3) ve çalışma kartı üretmek. `ANTHROPIC_API_KEY` yoksa ikisi de kapalı
+kalır, kabuk deterministik çalışmaya devam eder.
 
 ## Çalıştırma
 
@@ -15,6 +25,12 @@ Sonra: **http://127.0.0.1:8712**
 
 Sunucu yalnızca `127.0.0.1`'e bağlanır. Dışarı açık değildir, bu yüzden kimlik doğrulama yoktur.
 Dışarı açacaksan (telefondan erişim) önce kimlik doğrulama gerekir — bkz. şartname Bölüm 15.
+
+**Bilgisayarın yoksa:** `.devcontainer/` hazır. GitHub'da **Code → Codespaces →
+Create codespace**, sonra `python run.py`. Port kendiliğinden yönlendirilir,
+sayfa yalnızca GitHub hesabınla açılır; Venüs yine `127.0.0.1`'e bağlı kalır.
+Verin `veri/` klasöründe durur, `./yedek` ile GitHub'a kaydedilir.
+Ayrıntı: [docs/DURUM.md](docs/DURUM.md).
 
 ## Komutlar
 
