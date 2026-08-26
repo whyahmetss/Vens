@@ -418,7 +418,11 @@ function durum(on){
 /* --- çekirdek köprüsü --- */
 let sock = null, hazir = false;
 function baglan(){
-  sock = new WebSocket(`ws://${location.host}/ws`);
+  // Şema sayfadan türetilir. Sunucu yine 127.0.0.1'e bağlı; ama sayfa
+  // https ile sunulduğunda (uzak bir geliştirme ortamı, port yönlendirme)
+  // tarayıcı güvensiz ws:// bağlantısını engeller ve kabuk hiç açılmaz.
+  const sema = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  sock = new WebSocket(`${sema}//${location.host}/ws`);
   sock.onopen = ()=>{ durum(true); if(!hazir){ hazir = true; uyan(); } };
   sock.onmessage = e=>{
     const m = JSON.parse(e.data);
